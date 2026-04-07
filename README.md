@@ -283,7 +283,7 @@ in the Software without restriction...
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=100&section=footer" width="100%"/>
 
-**Made with 🍃 and AI by [Balia077](https://github.com/Balia077)**
+**Made by [Balia077](https://github.com/Balia077)**
 
 *Eat smart. Live better. With FoodSensei.*
 
