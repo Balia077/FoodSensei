@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "font-1";
+  src: 
+    url("./fonts/fontsource-converted/surgena.woff2") format("woff2"),
+    url("./fonts/font-1.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "lemon-milk";
+  src: url("./fonts/lemon_milk_woff2/LEMONMILK-Bold.woff2") format("woff2"),
+}
+
+@font-face {
+  font-family: "lemon-milk-light";
+  src: url("./fonts/lemon_milk_woff2/LEMONMILK-Light.woff2") format("woff2")
+}
+
+@font-face {
+  font-family: "thunder-font";
+  src: url("./fonts/thunder-font-woff2/Thunder-BoldLC.woff2") format("woff2")
+}
