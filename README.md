@@ -1,135 +1,103 @@
-<h1 align="center">🥗 FoodSensei</h1>
+🧠🥗 FoodSensei
+<p align="center"> <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=26&duration=3000&pause=1000&color=22C55E&center=true&vCenter=true&width=700&lines=AI-Powered+Food+Health+Intelligence;Understand+Your+Food+Before+You+Eat;Smart+Nutrition+Decisions+with+AI" /> </p> <p align="center"> <b>AI-powered platform that analyzes food products and helps users make healthier decisions instantly.</b> </p>
+<p align="center"> <img src="https://img.shields.io/github/stars/Balia077/FoodSensei?style=for-the-badge&logo=github" /> <img src="https://img.shields.io/github/forks/Balia077/FoodSensei?style=for-the-badge&logo=github" /> <img src="https://img.shields.io/github/license/Balia077/FoodSensei?style=for-the-badge" /> <img src="https://img.shields.io/badge/AI-Powered-000?style=for-the-badge" /> <img src="https://img.shields.io/badge/React-Vite-61DAFB?style=for-the-badge&logo=react" /> <img src="https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge&logo=tailwindcss" /> <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" /> </p>
+✨ What is FoodSensei?
 
-<p align="center">
-  <b>AI-Powered Healthy Food Recommendation Platform</b>
-</p>
+FoodSensei is a modern AI-powered food intelligence platform that evaluates food products and provides smart health recommendations using nutritional analysis and AI reasoning.
 
-<p align="center">
-  A full-stack MERN application that analyzes food products and helps users make healthier decisions using intelligent recommendations.
-</p>
+It works like a personal AI nutrition assistant, helping users understand whether a product is healthy — before consuming it.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/MERN-Stack-green?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/React-Vite-blue?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Node.js-Backend-darkgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/MongoDB-Database-brightgreen?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/TailwindCSS-UI-38B2AC?style=for-the-badge" />
-</p>
+🧠 Turning food data into actionable health insights.
 
----
+🎥 Live Preview
 
-## 🧠 About The Project
+🚧 Demo deployment coming soon
 
-**FoodSensei** is a modern full-stack web application designed to evaluate food products and provide health insights through smart analysis.
+🚀 Features
+🔍 Smart Food Product Search
+🤖 AI Health Recommendation Engine
+📊 Nutritional Insight Analysis
+⚡ Ultra-fast UI (Vite Powered)
+📱 Fully Responsive Design
+🧩 Scalable Full-Stack Architecture
+🧠 AI-ready backend system
 
-The project combines:
+🏗️ System Architecture
+User Interface (React + Tailwind)
+            │
+            ▼
+        REST API Layer
+            │
+            ▼
+     Node.js + Express Backend
+            │
+            ▼
+   AI Recommendation Engine
+            │
+            ▼
+     Health Evaluation Result
 
-- 🥗 Nutrition awareness
-- 🤖 AI-powered recommendations (upcoming)
-- ⚡ Modern MERN stack architecture
-- 🔐 Secure authentication system
-
-The goal is to build a real-world AI product experience rather than a basic CRUD application.
-
----
-
-## ✨ Features
-
-- 🔐 User Authentication (JWT + Cookies)
-- ⚡ Fast React + Vite frontend
-- 🌐 REST API with Express.js
-- 🗄 MongoDB database integration
-- 🎨 Modern UI using TailwindCSS
-- 📡 API communication using Axios
-- 🧠 AI food analysis (Planned)
-
----
-
-## 🛠 Tech Stack
-
-### Frontend
-- React (Vite)
-- Tailwind CSS
-- Axios
-- Lucide React Icons
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- JWT Authentication
-- bcryptjs
-- Cookie Parser
-- CORS
-- dotenv
-
----
-
-## 📂 Project Structure
+📂 Project Structure
 FoodSensei/
 │
-├── backend/
-│ ├── controllers/
-│ ├── models/
-│ ├── routes/
-│ ├── middleware/
-│ └── server.js
-│
-├── frontend/
-│ ├── src/
-│ │ ├── components/
-│ │ ├── pages/
-│ │ ├── services/
-│ │ └── App.jsx
-│
+├── frontend/        # React Client
+├── backend/         # Server + AI Logic
 └── README.md
 
----
-
-## ⚙️ Getting Started
-
-### 1️⃣ Clone Repository
-
-```bash
+⚙️ Quick Start
+1️⃣ Clone Repository
 git clone https://github.com/Balia077/FoodSensei.git
 cd FoodSensei
 
-2️⃣ Backend Setup
+2️⃣ Run Frontend
+cd frontend
+npm install
+npm run dev
+http://localhost:5173
+
+3️⃣ Run Backend
 cd backend
 npm install
 npm run dev
 
-Create a .env file inside backend/:
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
+🧠 How It Works
+1. User searches or uploads food product
+2. Backend processes product information
+3. AI evaluates nutrition & ingredients
+4. Health score generated
+5. Smart recommendation displayed
 
-3️⃣ Frontend Setup
-cd frontend
-npm install
-npm run dev
+🌍 Vision
 
-Open browser:
-http://localhost:5173
+FoodSensei aims to become a global AI nutrition intelligence system that:
 
-🚀 Future Roadmap
-✅ MERN project foundation
-✅ Authentication system
-⏳ Food product search
-⏳ AI nutrition analysis
-⏳ Health scoring system
-⏳ Personalized recommendations
-⏳ Deployment (Vercel + Render)
-⏳ Barcode scanning support
+Helps people eat healthier
+Simplifies food label understanding
+Uses AI for daily lifestyle decisions
+Provides personalized health insights
 
-🤝 Contributing
+🛣️ Roadmap
+ AI Model Integration
+ Food Image Recognition
+ Health Scoring Algorithm
+ Authentication System
+ Personalized Recommendations
+ Cloud Deployment
+ Mobile App Version
+
+ 🤝 Contributing
 
 Contributions are welcome!
 
-Fork the repository
-Create a feature branch
-Commit your changes
-Open a Pull Request
+Fork → Clone → Create Branch → Commit → Pull Request
+
+⭐ Support
+
+If you like FoodSensei:
+
+⭐ Star the repo
+🍴 Fork it
+🚀 Share it
 
 👨‍💻 Author
 
@@ -137,6 +105,8 @@ Balaram Das
 
 GitHub: https://github.com/Balia077
 
-⭐ Support
+📄 License
 
-If you like this project, please consider giving it a ⭐ on GitHub.
+MIT License © 2026 FoodSensei
+
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=22C55E&height=120&section=footer"/> </p>
