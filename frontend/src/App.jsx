@@ -6,9 +6,9 @@ import Hero from './components/Hero'
 const App = () => {
   return (
     <div className='h-screen -w-full'>
-      {/* <Hero /> */}
+      <Hero />
       {/* <Register /> */}
-      <Login />
+      {/* <Login /> */}
     </div>
   )
 }

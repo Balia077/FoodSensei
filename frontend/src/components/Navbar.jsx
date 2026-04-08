@@ -1,43 +1,45 @@
 import React from "react";
-import { Search } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
   return (
-    <div className="text-white w-full h-25 border-b-2 border-zinc-700 flex items-center px-10 gap-12">
+    <div className="text-[#222222] w-full h-25 border-b border-zinc-300 flex items-center px-10 gap-12">
       <div className="logo font-[font-1]">
         <h2 className="text-3xl">
           Food<span className="text-[#f73b3b]">Sensei</span>
         </h2>
       </div>
-      <div className="navcontents font-[lemon-milk] flex justify-around items-center h-12 w-140 backdrop-blur-md bg-white/10 border-b border-white/20 text-white rounded-4xl">
-        <a className="text-sm text-zinc-300" href="">
-          HOME
+      <div className="navcontents font-[helvetica] capitalize flex gap-10 items-center h-12 w-105 text-[#222222] rounded-4xl">
+        <a className="font-semibold" href="">
+          Home
         </a>
-        <a className="text-sm text-zinc-300" href="">
-          FEATURE
+        <a className="flex font-semibold" href="">
+          Feature
+          <ChevronDown className="mt-1" size={17} color="#000000"/>
         </a>
-        <a className="text-sm text-zinc-300" href="">
+        <a className="font-semibold" href="">
           FP
         </a>
-        <a className="text-sm text-zinc-300" href="">
-          ABOUT
+        <a className="font-semibold" href="">
+          About
         </a>
-        <a className="text-sm text-zinc-300" href="">
-          CONTACT
+        <a className="font-semibold" href="">
+          Contact
         </a>
       </div>
       <div
         className="
         flex items-center gap-3
-        px-4 py-2.5 w-75
+        px-4 py-2.5 w-125
         rounded-4xl
         backdrop-blur-xl
         bg-white/10
         border border-white/20
         shadow-xl
+        inset-shadow-sm
       "
       >
-        <Search className="text-white/70" size={20} />
+        <Search className="text-black/70" size={20} />
 
         <input
           type="text"
@@ -45,15 +47,15 @@ const Navbar = () => {
           className="
             bg-transparent
             outline-none
-            text-white
-            placeholder:text-white/60
+            text-black
+            placeholder:text-black/60
             w-full
           "
         />
       </div>
-      <div className="flex justify-between font-[lemon-milk] gap-7">
-        <button className="text-md font-bold border-2 text-zinc-300 border-zinc-600 rounded-4xl px-7 ">Sign Up</button>
-        <button className="text-md font-bold bg-white px-7 py-2.5 rounded-4xl text-black">Login</button>
+      <div className="flex font-[helvetica] gap-5">
+        <button className="text-md font-bold text-[#222222] rounded-4xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-xl inset-shadow-sm px-5 py-2.5">Sign Up</button>
+        <button className="text-md font-bold px-5 rounded-4xl backdrop-blur-xl bg-black border border-white/20 shadow-xl/20 text-white">Login</button>
       </div>
     </div>
   );

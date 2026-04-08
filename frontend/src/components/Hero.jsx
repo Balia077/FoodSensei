@@ -3,7 +3,7 @@ import Navbar from './Navbar'
 
 const Hero = () => {
   return (
-    <div className='h-screen w-full bg-[#0f0f0f]'>
+    <div className='h-screen w-full bg-[#F8F8F8]'>
       <Navbar />
     </div>
   )
