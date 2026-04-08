@@ -1,7 +1,7 @@
 import React from 'react'
 import Register from './components/Register'
 import Login from './components/Login'
-import Hero from './components/Hero'
+import Hero from './pages/Hero'
 
 const App = () => {
   return (
