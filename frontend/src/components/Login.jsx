@@ -24,7 +24,7 @@ const Login = () => {
   };
 
   return (
-    <div className="h-full w-full bg-zinc-900 text-white flex items-center justify-center">
+    <div className="h-screen w-full bg-zinc-900 text-white flex items-center justify-center">
       <div className="bg-zinc-800 w-130 rounded-lg">
         <h1 className="text-4xl text-center font-semibold mt-5 mb-2">Login</h1>
         <form

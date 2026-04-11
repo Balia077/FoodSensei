@@ -30,23 +30,26 @@ const Register = () => {
     }
 
     return (
-        <div className='h-full w-full bg-zinc-900 text-white flex items-center justify-center'>
+        <div className='h-screen w-full bg-zinc-900 text-white flex items-center justify-center'>
             <div className='bg-zinc-800 w-130 rounded-lg'>
                 <h1 className='text-4xl text-center font-semibold mt-5 mb-5'>Register</h1>
                 <form onSubmit={formHandler} className='h-full w-full flex flex-wrap p-5' action="">
-                    <input 
+                    <input
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        required
                         className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="text" placeholder='Username' 
                     />
                     <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                     className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="email" placeholder='Email' 
                     />
                     <input
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required
                     className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="password" placeholder='Password' 
                     />
                     <input 
