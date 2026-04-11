@@ -22,3 +22,12 @@
   font-family: "thunder-font";
   src: url("./fonts/thunder-font-woff2/Thunder-BoldLC.woff2") format("woff2")
 }
+
+.heroText{
+  color: transparent;
+  -webkit-text-stroke: 1px #000;
+}
+
+.sensei{
+  -webkit-text-stroke: 1px #F8F2F0;
+}
