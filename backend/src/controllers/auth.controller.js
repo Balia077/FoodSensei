@@ -1,6 +1,7 @@
 const userModel = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { generateToken } = require('../utils/generateToken');
 
 async function registerUser(req, res) {
 
@@ -27,12 +28,8 @@ async function registerUser(req, res) {
         password: hashedPassword
     })
 
-    const token = jwt.sign({
-        id: user._id,
-        username: user.username,
-    }, process.env.JWT_SECRET)
-
-    res.cookie('token', token)
+    let token = generateToken(user);
+    res.cookie("token", token);
 
     res.status(201).json({
         message: "User registered successfully",
@@ -64,12 +61,8 @@ async function loginUser(req, res) {
         return res.status(404).json({ message: "Invalid Credentials" });
     }
 
-    const token = jwt.sign({
-        id: user._id,
-        username: user.username,
-    }, process.env.JWT_SECRET)
-
-    res.cookie('token', token);
+    let token = generateToken(user);
+    res.cookie("token", token);
 
     res.status(200).json({
         message: "User Logged in Successfully",
