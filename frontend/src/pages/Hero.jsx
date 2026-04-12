@@ -4,7 +4,7 @@ import HeroText from '../components/HeroText'
 
 const Home = () => {
   return (
-    <div className='h-[85vh] w-full bg-[#F8F2F0]'>
+    <div className='h-[90vh] w-full bg-[#F8F2F0]'>
       {/* <Navbar /> */}
       <HeroText />
     </div>
