@@ -6,10 +6,10 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="text-[#222222] h-[10vh] bg-[#F8F2F0] w-full border-b border-zinc-300 flex items-center justify-between px-4 lg:px-10 py-3">
+    <div className="text-[#222222] h-[10vh] bg-[#EFF5F3] w-full flex items-center justify-between px-4 lg:px-10 py-3">
 
       <h2 className="text-xl sm:text-2xl lg:text-3xl font-[font-1]">
-        Food<span className="text-[#F30819]">Sensei</span>
+        Food<span className="text-[#00CD6E]">Sensei</span>
       </h2>
 
       <div className="hidden lg:flex gap-10 items-center font-semibold">
@@ -33,18 +33,14 @@ const Navbar = () => {
         />
       </div>
 
-      <div className="hidden lg:flex gap-4">
+      <div className="hidden lg:flex">
         <Link to="/register">
-          <button className="font-bold rounded-full bg-white/20 border px-4 py-2 shadow">
-            Sign Up
+          <button className="font-bold rounded-full bg-white/20 border border-zinc-400 px-4 py-2 shadow">
+            Sign in
           </button>
         </Link>
 
-        <Link to="/login">
-          <button className="font-bold rounded-full bg-black text-white px-4 py-2 shadow">
-            Login
-          </button>
-        </Link>
+
       </div>
 
       <div className="lg:hidden">
@@ -64,15 +60,11 @@ const Navbar = () => {
 
           <Link to="/register">
             <button className="font-bold rounded-full bg-white/20 border px-5 py-2">
-              Sign Up
+              Sign in
             </button>
           </Link>
 
-          <Link to="/login">
-            <button className="font-bold rounded-full bg-black text-white px-5 py-2">
-              Login
-            </button>
-          </Link>
+
         </div>
       )}
     </div>

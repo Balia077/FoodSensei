@@ -30,7 +30,7 @@ const Register = () => {
     }
 
     return (
-        <div className='h-[85vh] w-full bg-[#F8F2F0] text-white flex items-center justify-center'>
+        <div className='h-[90vh] w-full bg-[#EFF5F3] text-white flex items-center justify-center'>
             <div className='bg-zinc-800 w-130 rounded-lg'>
                 <h1 className='text-4xl text-center font-semibold mt-5 mb-5'>Register</h1>
                 <form onSubmit={formHandler} className='h-full w-full flex flex-wrap p-5' action="">
