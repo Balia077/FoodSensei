@@ -1,9 +1,9 @@
-import { ShieldCheck, Clock } from "lucide-react";
+import { Utensils, LeafyGreen } from "lucide-react";
 
 const HeroText = () => {
   return (
-    <div className="relative w-full min-h-[90vh] bg-[#EFF5F3] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-10">
-
+    <div className="relative w-full min-h-[91vh] bg-[#EFF5F3] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-10">
+      
       {/* === MAIN GLOW === */}
       <div className="absolute w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] lg:w-[720px] lg:h-[720px] rounded-full 
         bg-[radial-gradient(circle,_rgba(16,185,129,0.35)_0%,_rgba(16,185,129,0.15)_35%,_transparent_70%)] blur-[40px] sm:blur-[50px]" />
@@ -23,14 +23,14 @@ const HeroText = () => {
       {/* === FLOATING ICON LEFT === */}
       <div className="absolute left-[5%] sm:left-[10%] lg:left-[15%] bottom-[10%] sm:bottom-[15%] lg:bottom-[20%] animate-floatSlow">
         <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 backdrop-blur-xl bg-white/50 border border-white/60 rounded-2xl shadow-md flex items-center justify-center">
-          <ShieldCheck className="text-emerald-500" size={20} />
+          <LeafyGreen className="text-emerald-500" size={20} />
         </div>
       </div>
 
       {/* === FLOATING ICON RIGHT === */}
       <div className="absolute right-[5%] sm:right-[10%] lg:right-[15%] top-[10%] sm:top-[20%] lg:top-[25%] animate-float">
         <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 backdrop-blur-xl bg-white/50 border border-white/60 rounded-2xl shadow-md flex items-center justify-center">
-          <Clock className="text-emerald-500" size={20} />
+          <Utensils className="text-emerald-500" size={20} />
         </div>
       </div>
 

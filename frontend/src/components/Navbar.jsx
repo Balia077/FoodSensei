@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Search, ChevronDown, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
 
+  const btnGreen = useRef(null)
+  const text = useRef(null)
+
   return (
-    <div className="text-[#222222] h-[10vh] bg-[#EFF5F3] w-full flex items-center justify-between px-4 lg:px-10 py-3">
+    <div className="text-[#222222] bg-[#EFF5F3] w-full flex items-center justify-between px-4 lg:px-10 py-3">
 
       <h2 className="text-xl sm:text-2xl lg:text-3xl font-[font-1]">
         Food<span className="text-[#00CD6E]">Sensei</span>
@@ -33,11 +36,19 @@ const Navbar = () => {
         />
       </div>
 
-      <div className="hidden lg:flex">
+      <div
+        onMouseEnter={()=> {
+          btnGreen.current.style.height="5.5vh"
+          text.current.style.color="white"
+        }}
+        onMouseLeave={()=> {
+          btnGreen.current.style.height="0"
+          text.current.style.color="black"
+        }}
+        className="hidden lg:flex">
         <Link to="/register">
-          <button className="font-bold rounded-full bg-white/20 border border-zinc-400 px-4 py-2 shadow">
-            Sign in
-          </button>
+          <div ref={btnGreen} className="absolute h-0 w-21.5 rounded-full bg-[#00CD6E] font-bold justify-center flex items-center transition-all"></div>
+          <div ref={text} className="relative font-bold rounded-full bg-white/20 border text-black border-zinc-400 px-4 py-2 shadow">Sign in</div>
         </Link>
 
 
@@ -50,7 +61,7 @@ const Navbar = () => {
       </div>
 
       {open && (
-        <div className="absolute top-[70px] left-0 w-full bg-[#F8F2F0] shadow-md flex flex-col items-center gap-5 py-6 lg:hidden z-50">
+        <div className="absolute top-17.5 left-0 w-full bg-[#EFF5F3] shadow-md flex flex-col items-center gap-5 py-6 lg:hidden z-50">
 
           <Link to="/" onClick={() => setOpen(false)}>Home</Link>
           <Link to="#" onClick={() => setOpen(false)}>Feature</Link>
