@@ -47,8 +47,8 @@ const Navbar = () => {
         }}
         className="hidden lg:flex">
         <Link to="/register">
-          <div ref={btnGreen} className="absolute h-0 w-21.5 rounded-full bg-[#00CD6E] font-bold justify-center flex items-center transition-all"></div>
-          <div ref={text} className="relative font-bold rounded-full bg-white/20 border text-black border-zinc-400 px-4 py-2 shadow">Sign in</div>
+          <div ref={btnGreen} className="absolute h-0 w-[11.5vh] rounded-full bg-black font-bold justify-center flex items-center transition-all"></div>
+          <div ref={text} className="relative font-bold rounded-full bg-white/20 text-black px-4 py-2 shadow-md">Sign in</div>
         </Link>
 
 
