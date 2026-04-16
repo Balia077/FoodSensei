@@ -69,7 +69,7 @@ const Navbar = () => {
           <Link to="#" onClick={() => setOpen(false)}>About</Link>
           <Link to="#" onClick={() => setOpen(false)}>Contact</Link>
 
-          <Link to="/register">
+          <Link to="/login">
             <button className="font-bold rounded-full bg-white/20 border px-5 py-2">
               Sign in
             </button>
