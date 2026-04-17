@@ -1,64 +1,85 @@
-import React, { useState } from 'react'
-import axios from 'axios';
+import React, { useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 const Register = () => {
+//   const [username, setUsername] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [password, setPassword] = useState("");
 
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+//   const formHandler = async (e) => {
+//     e.preventDefault();
+//     const data = {
+//       username,
+//       email,
+//       password,
+//     };
+//     // console.log(data);
+//     setUsername("");
+//     setEmail("");
+//     setPassword("");
 
-    const formHandler = async (e) =>{
-        e.preventDefault();
-        const data = {
-            username,
-            email,
-            password
-        }
-        // console.log(data);
-        setUsername('');
-        setEmail('');
-        setPassword('');
+//     try {
+//       const response = await axios.post(
+//         "http://localhost:3000/api/auth/register",
+//         data,
+//       );
+//       alert(response.data.message);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   };
 
-        try{
-            const response = await axios.post('http://localhost:3000/api/auth/register', data);
-            alert(response.data.message);
-        }
-        catch(err){
-            console.log(err);
-        }
-
-    }
-
-    return (
-        <div className='h-[90vh] w-full bg-[#EFF5F3] text-white flex items-center justify-center'>
-            <div className='bg-zinc-800 w-130 rounded-lg'>
-                <h1 className='text-4xl text-center font-semibold mt-5 mb-5'>Register</h1>
-                <form onSubmit={formHandler} className='h-full w-full flex flex-wrap p-5' action="">
-                    <input
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="text" placeholder='Username' 
-                    />
-                    <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="email" placeholder='Email' 
-                    />
-                    <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className='w-full h-15 outline-none border rounded-xl border-zinc-600 p-2 mt-2' type="password" placeholder='Password' 
-                    />
-                    <input 
-                    className='w-45 h-12 ml-35 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 mt-5 px-4 border border-blue-700 rounded-xl' type="submit" value="Submit" 
-                    />
-                </form>
-            </div>
+  return (
+    <div className="h-[91vh] w-full bg-[#EFF5F3] flex px-50 py-5">
+      <div className="h-[81vh] w-full flex justify-between rounded-2xl drop-shadow-xl drop-shadow-black/15 overflow-hidden bg-[#ffffff]">
+        <div className="w-1/2 h-full p-3">
+          <img
+            className="w-full h-full object-cover overflow-hidden rounded-2xl"
+            src="../images/third.jpg"
+            alt=""
+          />
         </div>
-    )
-}
+        <div className="w-1/2 h-full p-20">
+          <h2 className="flex justify-center text-[4vh] font-bold mb-5">
+            Create an account
+          </h2>
+          <form className="flex flex-col gap-3" action="">
+            <h3>Username</h3>
+            <input
+              placeholder="Enter Username..."
+              className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
+              type="email"
+            />
+            <h3 className="font-semibold">Email</h3>
+            <input
+              placeholder="Enter email..."
+              className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
+              type="email"
+            />
+            <h3 className="font-semibold">Password</h3>
+            <input
+              placeholder="Enter Password..."
+              className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
+              type="password"
+            />
+            <button
+              className="px-5 py-3 mt-5 bg-black text-white font-bold text-lg rounded-xl"
+              type="submit"
+            >
+              Get Started
+            </button>
+          </form>
+          <h4 className="text-md mt-5 flex justify-center">
+            Already have an account?{" "}
+            <Link className="text-blue-600 font-semibold" to="/login">
+              Sign in
+            </Link>
+          </h4>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-export default Register
+export default Register;
