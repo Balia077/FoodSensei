@@ -50,13 +50,14 @@ const Register = () => {
           </h2>
 
           <form onSubmit={formHandler} className="flex flex-col gap-3">
-            <h3>Username</h3>
+            <h3 className="font-semibold">Username</h3>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter Username..."
               className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
               type="text"
+              required
             />
 
             <h3 className="font-semibold">Email</h3>
@@ -66,6 +67,7 @@ const Register = () => {
               placeholder="Enter email..."
               className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
               type="email"
+              required
             />
 
             <h3 className="font-semibold">Password</h3>
@@ -75,6 +77,7 @@ const Register = () => {
               placeholder="Enter Password..."
               className="px-5 py-3 outline-none bg-transparent border border-zinc-300 rounded-xl"
               type="password"
+              required
             />
 
             <button

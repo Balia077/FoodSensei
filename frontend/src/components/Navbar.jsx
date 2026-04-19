@@ -1,67 +1,83 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Search, ChevronDown, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
+  const { loggedIn, logout, user } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const btnGreen = useRef(null)
-  const text = useRef(null)
+  const getInitials = () => {
+    if(!user?.username) return "U";
+    return user.username.slice(0, 2).toUpperCase();
+  };
 
   return (
-    <div className="text-[#222222] bg-[#EFF5F3] w-full flex items-center justify-between px-4 lg:px-10 py-3">
+    <nav className="bg-[#EFF5F3] px-4 lg:px-10 py-3 flex items-center justify-between relative">
 
-      <h2 className="text-xl sm:text-2xl lg:text-3xl font-[font-1]">
+      {/* Logo */}
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
         Food<span className="text-[#00CD6E]">Sensei</span>
       </h2>
 
-      <div className="hidden lg:flex gap-10 items-center font-semibold">
+      {/* Desktop Links */}
+      <div className="hidden lg:flex gap-8 font-semibold items-center">
         <Link to="/">Home</Link>
 
-        <Link className="flex items-center gap-1" to="#">
+        <div className="flex items-center gap-1 cursor-pointer">
           Feature <ChevronDown size={16} />
-        </Link>
+        </div>
 
         <Link to="#">FP</Link>
         <Link to="#">About</Link>
         <Link to="#">Contact</Link>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 w-[45%] sm:w-[40%] lg:w-[30%] rounded-full backdrop-blur-xl bg-white/20 border border-white/30 shadow-md">
-        <Search size={18} className="text-black/70" />
+      {/* Search */}
+      <div className="hidden sm:flex items-center gap-2 px-4 py-2 w-[40%] lg:w-[30%] rounded-full bg-white/30 backdrop-blur-md shadow-sm">
+        <Search size={18} />
         <input
           type="text"
           placeholder="Search Food..."
-          className="bg-transparent outline-none text-sm w-full placeholder:text-black/60"
+          className="bg-transparent outline-none w-full text-sm"
         />
       </div>
 
-      <div
-        onMouseEnter={()=> {
-          btnGreen.current.style.height="5.5vh"
-          text.current.style.color="white"
-        }}
-        onMouseLeave={()=> {
-          btnGreen.current.style.height="0"
-          text.current.style.color="black"
-        }}
-        className="hidden lg:flex">
-        <Link to="/login">
-          <div ref={btnGreen} className="absolute h-0 w-[11.5vh] rounded-md bg-black font-bold justify-center flex items-center transition-all"></div>
-          <div ref={text} className="relative font-bold rounded-md bg-white/20 text-black px-4 py-2 shadow-md">Sign in</div>
-        </Link>
+      {/* Right Section */}
+      <div className="hidden lg:flex items-center gap-4">
 
+        {/* If NOT logged in */}
+        {!loggedIn && (
+          <Link to="/login">
+            <button className="relative overflow-hidden px-4 py-2 rounded-md font-bold shadow-sm group">
+              <span className="absolute inset-0 bg-black scale-y-0 origin-bottom transition-transform duration-300 group-hover:scale-y-100"></span>
+              <span className="relative z-10 group-hover:text-white transition">
+                Sign in
+              </span>
+            </button>
+          </Link>
+        )}
 
+        {/* If logged in */}
+        {loggedIn && (
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
+              {getInitials()}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Mobile Menu Button */}
       <div className="lg:hidden">
         <button onClick={() => setOpen(!open)}>
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
+      {/* Mobile Menu */}
       {open && (
-        <div className="absolute top-17.5 left-0 w-full bg-[#EFF5F3] shadow-md flex flex-col items-center gap-5 py-6 lg:hidden z-50">
+        <div className="absolute top-full left-0 w-full bg-[#EFF5F3] shadow-md flex flex-col items-center gap-5 py-6 lg:hidden z-50">
 
           <Link to="/" onClick={() => setOpen(false)}>Home</Link>
           <Link to="#" onClick={() => setOpen(false)}>Feature</Link>
@@ -69,16 +85,22 @@ const Navbar = () => {
           <Link to="#" onClick={() => setOpen(false)}>About</Link>
           <Link to="#" onClick={() => setOpen(false)}>Contact</Link>
 
-          <Link to="/login">
-            <button className="font-bold rounded-full bg-white/20 border px-5 py-2">
-              Sign in
+          {!loggedIn ? (
+            <Link to="/login">
+              <button className="font-bold px-5 py-2 border rounded-full">
+                Sign in
+              </button>
+            </Link>
+          ) : (
+            <button
+              className="font-bold px-5 py-2 border rounded-full"
+            >
+              Profile
             </button>
-          </Link>
-
-
+          )}
         </div>
       )}
-    </div>
+    </nav>
   );
 };
 
