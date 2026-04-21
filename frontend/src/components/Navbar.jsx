@@ -1,16 +1,31 @@
 import React, { useState } from "react";
 import { Search, ChevronDown, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from '../api/axios';
 
 const Navbar = () => {
   const { loggedIn, logout, user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const getInitials = () => {
-    if(!user?.username) return "U";
+    if (!user?.username) return "U";
     return user.username.slice(0, 2).toUpperCase();
   };
+
+  const profileOpener = async () => {
+    // For now, just open profile page on click 
+
+    try {
+      const response = await api.get('/user/profile');
+      navigate('/profile');
+      console.log(response);
+    } catch(err) {
+      console.log(err);
+    }
+
+  }
 
   return (
     <nav className="bg-[#EFF5F3] px-4 lg:px-10 py-3 flex items-center justify-between relative">
@@ -60,8 +75,10 @@ const Navbar = () => {
 
         {/* If logged in */}
         {loggedIn && (
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-black text-white flex items-center justify-center font-bold">
+          <div
+            onClick={profileOpener}
+            className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-black text-white cursor-pointer flex items-center justify-center font-bold">
               {getInitials()}
             </div>
           </div>
@@ -78,12 +95,21 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {open && (
         <div className="absolute top-full left-0 w-full bg-[#EFF5F3] shadow-md flex flex-col items-center gap-5 py-6 lg:hidden z-50">
-
-          <Link to="/" onClick={() => setOpen(false)}>Home</Link>
-          <Link to="#" onClick={() => setOpen(false)}>Feature</Link>
-          <Link to="#" onClick={() => setOpen(false)}>FP</Link>
-          <Link to="#" onClick={() => setOpen(false)}>About</Link>
-          <Link to="#" onClick={() => setOpen(false)}>Contact</Link>
+          <Link to="/" onClick={() => setOpen(false)}>
+            Home
+          </Link>
+          <Link to="#" onClick={() => setOpen(false)}>
+            Feature
+          </Link>
+          <Link to="#" onClick={() => setOpen(false)}>
+            FP
+          </Link>
+          <Link to="#" onClick={() => setOpen(false)}>
+            About
+          </Link>
+          <Link to="#" onClick={() => setOpen(false)}>
+            Contact
+          </Link>
 
           {!loggedIn ? (
             <Link to="/login">
@@ -92,9 +118,7 @@ const Navbar = () => {
               </button>
             </Link>
           ) : (
-            <button
-              className="font-bold px-5 py-2 border rounded-full"
-            >
+            <button className="font-bold px-5 py-2 border rounded-full">
               Profile
             </button>
           )}
