@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Search, ChevronDown, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import api from '../api/axios';
+
 
 const Navbar = () => {
   const { loggedIn, logout, user } = useAuth();
@@ -17,13 +17,7 @@ const Navbar = () => {
   const profileOpener = async () => {
     // For now, just open profile page on click 
 
-    try {
-      const response = await api.get('/user/profile');
-      navigate('/profile');
-      console.log(response);
-    } catch(err) {
-      console.log(err);
-    }
+    navigate('/profile');
 
   }
 
