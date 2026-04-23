@@ -33,9 +33,7 @@ const Navbar = () => {
       <div className="hidden lg:flex gap-8 font-semibold items-center">
         <Link to="/">Home</Link>
 
-        <div className="flex items-center gap-1 cursor-pointer">
-          Feature <ChevronDown size={16} />
-        </div>
+        <Link to={"/analyze"}>Analyze</Link>
 
         <Link to="#">FP</Link>
         <Link to="#">About</Link>
