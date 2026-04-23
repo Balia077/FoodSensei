@@ -26,11 +26,11 @@ const Navbar = () => {
 
       {/* Logo */}
       <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
-        Food<span className="text-[#00CD6E]">Sensei</span>
+        Food<span className="text-[#00CD6E] font-[font-1]">Sensei</span>
       </h2>
 
       {/* Desktop Links */}
-      <div className="hidden lg:flex gap-8 font-semibold items-center">
+      <div className="hidden lg:flex gap-8 font-semibold items-center text-zinc-700">
         <Link to="/">Home</Link>
 
         <Link to={"/analyze"}>Analyze</Link>
