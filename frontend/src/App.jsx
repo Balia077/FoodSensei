@@ -6,6 +6,7 @@ import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Profile from './pages/Profile'
 import Analyze from './pages/Analyze'
+import FoodPage from './pages/FoodPage'
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
       <Route path='/login' element={<Login />} />
       <Route path='/profile' element={<Profile />} />
       <Route path='/analyze' element={<Analyze />} />
+      <Route path='/foodproduct' element={<FoodPage />} />
     </Routes>
     </>
   )

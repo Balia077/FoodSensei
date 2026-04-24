@@ -2,7 +2,7 @@ import { Utensils, LeafyGreen } from "lucide-react";
 
 const HeroText = () => {
   return (
-    <div className="relative w-full min-h-[91vh] bg-[#EFF5F3] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-10">
+    <div className="relative w-full min-h-[92vh] bg-[#EFF5F3] flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-10">
       
       {/* === MAIN GLOW === */}
       <div className="absolute w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] lg:w-[720px] lg:h-[720px] rounded-full 

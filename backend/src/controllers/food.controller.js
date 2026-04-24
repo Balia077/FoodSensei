@@ -422,9 +422,19 @@ exports.analyzeFoodImage = async (req, res) => {
       ingredients,
       source,
     } = productData;
+
+    const fallbackImage = `https://source.unsplash.com/300x200/?${foodName})}`;
+
+    const finalImageUrl =
+      imageUrl ||
+      productData.image_front_url ||
+      productData.image_small_url ||
+      fallbackImage;
+
     const score = calculateScore(nutrition, goal);
     const status = classify(score);
     const reason = generateReason(nutrition, nutriScore);
+    console.log(productData);
 
     /* ══════════════════════════════════════════
        SAVE TO DATABASE
@@ -433,6 +443,7 @@ exports.analyzeFoodImage = async (req, res) => {
       userId,
       foodName,
       brand,
+      imageUrl: finalImageUrl, // ✅ IMPORTANT FIX
       ...nutrition,
       score,
       status,
@@ -512,4 +523,16 @@ exports.searchFood = async (req, res) => {
   }
 
   return res.json(result);
+};
+
+exports.getUserFoods = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    const foods = await Food.find({ userId }).sort({ createdAt: -1 });
+
+    res.json(foods);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch foods" });
+  }
 };
