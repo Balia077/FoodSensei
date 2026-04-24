@@ -9,9 +9,12 @@ import Analyze from './pages/Analyze'
 import FoodPage from './pages/FoodPage'
 import About from './components/About'
 import Footer from './components/Footer'
-
+import LocomotiveScroll from 'locomotive-scroll'
 
 const App = () => {
+
+  const locomotiveScroll = new LocomotiveScroll();
+
   return (
     <>
     <Navbar />

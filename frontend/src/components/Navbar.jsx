@@ -20,7 +20,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#EFF5F3] px-4 lg:px-10 py-3 flex items-center justify-between relative">
+    <nav className="bg-[#EFF5F3] fixed px-4 lg:px-10 py-3 flex items-center justify-between relative">
       {/* Logo */}
       <Link to={"/"}>
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
