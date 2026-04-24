@@ -3,114 +3,170 @@ const axios = require("axios");
 const FormData = require("form-data");
 const normalizeFoodWikipedia = require("../utils/foodNormalizer");
 
-/* ============================================================
-   🏗️  ARCHITECTURE
-   ─────────────────────────────────────────────────────────────
-   Input type detection
-        │
-        ├── barcode number  →  Open Food Facts  (packaged goods)
-        │
-        ├── image upload    →  LogMeal  (dish recognition)
-        │       └── if low confidence / unknown
-        │               └── Fallback: Open Food Facts text search
-        │
-        └── text search     →  Edamam  +  Open Food Facts fallback
 
-   Nutrition → Score → Classify → Save → Respond
-   ============================================================ */
-
-/* ─────────────────────────────────────────────
-   🔧 HELPERS
-───────────────────────────────────────────── */
-
-/** Clamp a number between min and max */
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
-/** Round to 2 decimal places */
+
 const round2 = (n) => Math.round((n || 0) * 100) / 100;
 
-/* ─────────────────────────────────────────────
-   🔥 SCORING  (per 100 g / serving)
-───────────────────────────────────────────── */
-function calculateScore(nutrition, goal = "general") {
-  let score = 100;
 
-  // Penalise bad nutrients
-  if (nutrition.sugar > 15) score -= 20;
-  else if (nutrition.sugar > 8) score -= 10;
-
-  if (nutrition.fat > 25) score -= 20;
-  else if (nutrition.fat > 15) score -= 10;
-
-  if (nutrition.sodium > 600)
-    score -= 15; // mg – packaged food killer
-  else if (nutrition.sodium > 300) score -= 7;
-
-  if (nutrition.calories > 500) score -= 15;
-  else if (nutrition.calories > 300) score -= 7;
-
-  // Reward good nutrients
-  if (nutrition.protein > 10) score += 10;
-  else if (nutrition.protein > 5) score += 5;
-
-  if (nutrition.fiber > 5) score += 10;
-  else if (nutrition.fiber > 2) score += 5;
-
-  // Goal modifiers
-  if (goal === "weight_loss") {
-    if (nutrition.calories > 400) score -= 15;
-    if (nutrition.fat > 20) score -= 10;
+function scoreNutrient(value, { bad, worse, worst }, invert = false) {
+  if (invert) {
+    if (value >= worst) return 0;
+    if (value >= worse) return 25;
+    if (value >= bad)   return 55;
+    return 100;
+  } else {
+    if (value >= worst) return 100;
+    if (value >= worse) return 75;
+    if (value >= bad)   return 45;
+    return 0;
   }
-  if (goal === "muscle_gain") {
-    if (nutrition.protein > 15) score += 10;
-  }
-
-  return clamp(Math.round(score), 0, 100);
 }
 
-/* ─────────────────────────────────────────────
-   📊 CLASSIFICATION
-───────────────────────────────────────────── */
+
+function calculateScore(nutrition, goal = "general") {
+  const {
+    calories = 0,
+    sugar    = 0,
+    fat      = 0,
+    sodium   = 0,    // mg
+    protein  = 0,
+    fiber    = 0,
+    carbs    = 0,
+  } = nutrition;
+
+  // ── 1. PER-NUTRIENT SCORES (0–100) ───────────────────────
+  const calorieScore = scoreNutrient(calories, { bad: 200, worse: 350, worst: 500 }, true);
+  const sugarScore   = scoreNutrient(sugar,    { bad: 6,   worse: 12,  worst: 22  }, true);
+  const fatScore     = scoreNutrient(fat,      { bad: 12,  worse: 20,  worst: 30  }, true);
+  const sodiumScore  = scoreNutrient(sodium,   { bad: 250, worse: 500, worst: 750 }, true);
+  const proteinScore = scoreNutrient(protein,  { bad: 3,   worse: 8,   worst: 15  }, false);
+  const fiberScore   = scoreNutrient(fiber,    { bad: 1.5, worse: 3,   worst: 6   }, false);
+
+  
+  const weights = {
+    calories: 0.18,
+    sugar:    0.22,   // sugar is the biggest offender in processed food
+    fat:      0.18,
+    sodium:   0.18,   // critical for packaged/Indian snacks
+    protein:  0.14,
+    fiber:    0.10,
+  };
+
+  let base =
+    calorieScore * weights.calories +
+    sugarScore   * weights.sugar    +
+    fatScore     * weights.fat      +
+    sodiumScore  * weights.sodium   +
+    proteinScore * weights.protein  +
+    fiberScore   * weights.fiber;
+
+  
+  const badCount = [
+    sugar    > 12,
+    fat      > 20,
+    sodium   > 500,
+    calories > 350,
+  ].filter(Boolean).length;
+
+  if (badCount >= 3) base *= 0.65;        // truly junk — hard 35% cut
+  else if (badCount === 2) base *= 0.80;  // problematic — 20% cut
+
+  
+  if (sugar    > 30)  base = Math.min(base, 30);  // candy / soda territory
+  if (fat      > 35)  base = Math.min(base, 35);  // deep-fried / butter
+  if (sodium   > 900) base = Math.min(base, 35);  // extremely salty
+  if (calories > 550) base = Math.min(base, 40);
+
+ 
+  let modifier = 0;
+
+  if (goal === "weight_loss") {
+    if (calories > 300)  modifier -= 8;
+    else if (calories < 150) modifier += 5;
+    if (fat > 15)        modifier -= 5;
+    if (fiber > 4)       modifier += 5;
+    if (sugar > 10)      modifier -= 5;
+  }
+
+  if (goal === "muscle_gain") {
+    if (protein > 20)    modifier += 10;
+    else if (protein > 12) modifier += 6;
+    else if (protein < 5)  modifier -= 8; // low-protein is bad for this goal
+    if (carbs > 40 && protein > 10) modifier += 4; // acceptable carb+protein combo
+  }
+
+  if (goal === "general") {
+    // Small bonus for genuinely clean profiles only
+    if (fiber > 5 && sugar < 6 && sodium < 250) modifier += 5;
+  }
+
+  return clamp(Math.round(base + modifier), 0, 100);
+}
+
+
 function classify(score) {
-  if (score >= 75) return "HEALTHY";
-  if (score >= 50) return "MODERATE";
+  if (score >= 70) return "HEALTHY";
+  if (score >= 45) return "MODERATE";
   return "UNHEALTHY";
 }
 
-/* ─────────────────────────────────────────────
-   💬 REASON GENERATOR
-───────────────────────────────────────────── */
-function generateReason(nutrition, nutriScore) {
-  const reasons = [];
 
-  if (nutrition.sugar > 15) reasons.push("Very high sugar content");
-  else if (nutrition.sugar > 8) reasons.push("Moderate sugar content");
+function generateReason(nutrition, nutriScore, goal = "general") {
+  const {
+    sugar = 0, fat = 0, sodium = 0,
+    calories = 0, protein = 0, fiber = 0,
+  } = nutrition;
 
-  if (nutrition.fat > 25) reasons.push("Very high fat content");
-  else if (nutrition.fat > 15) reasons.push("Moderate fat content");
+  const negatives = [];
+  const positives = [];
 
-  if (nutrition.sodium > 600)
-    reasons.push("High sodium – not ideal for heart health");
+  if (sugar > 22)          negatives.push("extremely high sugar content");
+  else if (sugar > 12)     negatives.push("high sugar content");
+  else if (sugar > 6)      negatives.push("moderate sugar");
 
-  if (nutrition.calories > 500) reasons.push("High calorie density");
+  if (fat > 30)            negatives.push("very high total fat");
+  else if (fat > 20)       negatives.push("high fat content");
+  else if (fat > 12)       negatives.push("moderate fat");
 
-  if (nutrition.protein > 10) reasons.push("Good source of protein");
-  if (nutrition.fiber > 5) reasons.push("Excellent fiber content");
+  if (sodium > 750)        negatives.push("dangerously high sodium (heart risk)");
+  else if (sodium > 500)   negatives.push("high sodium content");
+  else if (sodium > 250)   negatives.push("moderate sodium");
 
-  // Include Nutri-Score from Open Food Facts if available
+  if (calories > 500)      negatives.push("very high calorie density");
+  else if (calories > 350) negatives.push("high calorie content");
+
+  if (protein > 15)        positives.push("excellent protein source");
+  else if (protein > 8)    positives.push("good protein content");
+
+  if (fiber > 6)           positives.push("high in dietary fiber");
+  else if (fiber > 3)      positives.push("decent fiber content");
+
+  if (sugar < 4 && fat < 8 && sodium < 150)
+    positives.push("clean macronutrient profile");
+
+  if (goal === "weight_loss" && calories < 150)
+    positives.push("low calorie — good for weight loss");
+  if (goal === "muscle_gain" && protein > 20)
+    positives.push("high protein supports muscle growth");
+
   if (nutriScore && nutriScore !== "unknown") {
-    reasons.push(`Nutri-Score: ${nutriScore.toUpperCase()}`);
+    const grade = nutriScore.toUpperCase();
+    if (["A", "B"].includes(grade))   positives.push(`Nutri-Score ${grade} (official rating)`);
+    else if (["D", "E"].includes(grade)) negatives.push(`Nutri-Score ${grade} (officially rated poor)`);
+    else negatives.push(`Nutri-Score ${grade}`);
   }
 
-  return reasons.length > 0
-    ? reasons.join(". ")
-    : "Nutrition profile looks balanced";
+  const parts = [];
+  if (negatives.length) parts.push(`Issues: ${negatives.join(", ")}.`);
+  if (positives.length) parts.push(`Positives: ${positives.join(", ")}.`);
+  if (!parts.length)    parts.push("Nutrition profile looks balanced.");
+
+  return parts.join(" ");
 }
 
-/* ─────────────────────────────────────────────
-   🌍  SOURCE 1 — OPEN FOOD FACTS  (barcode)
-   Free, 3M+ products, great for Indian brands
-───────────────────────────────────────────── */
+
 async function getProductByBarcode(barcode) {
   try {
     const res = await axios.get(
@@ -132,12 +188,12 @@ async function getProductByBarcode(barcode) {
       ingredients: p.ingredients_text || null,
       nutrition: {
         calories: round2(n["energy-kcal_100g"] || n["energy-kcal"] || 0),
-        protein: round2(n.proteins_100g || 0),
-        fat: round2(n.fat_100g || 0),
-        sugar: round2(n.sugars_100g || 0),
-        fiber: round2(n.fiber_100g || 0),
-        sodium: round2((n.sodium_100g || n.sodium || 0) * 1000), // convert g → mg
-        carbs: round2(n.carbohydrates_100g || 0),
+        protein:  round2(n.proteins_100g || 0),
+        fat:      round2(n.fat_100g || 0),
+        sugar:    round2(n.sugars_100g || 0),
+        fiber:    round2(n.fiber_100g || 0),
+        sodium:   round2((n.sodium_100g || n.sodium || 0) * 1000), // g → mg
+        carbs:    round2(n.carbohydrates_100g || 0),
       },
     };
   } catch (err) {
@@ -146,10 +202,7 @@ async function getProductByBarcode(barcode) {
   }
 }
 
-/* ─────────────────────────────────────────────
-   🌍  SOURCE 2 — OPEN FOOD FACTS  (text search)
-   Fallback when LogMeal gives a bad result
-───────────────────────────────────────────── */
+
 async function searchOpenFoodFacts(query) {
   try {
     const res = await axios.get(
@@ -181,12 +234,12 @@ async function searchOpenFoodFacts(query) {
       ingredients: product.ingredients_text || null,
       nutrition: {
         calories: round2(n["energy-kcal_100g"] || 0),
-        protein: round2(n.proteins_100g || 0),
-        fat: round2(n.fat_100g || 0),
-        sugar: round2(n.sugars_100g || 0),
-        fiber: round2(n.fiber_100g || 0),
-        sodium: round2((n.sodium_100g || n.sodium || 0) * 1000),
-        carbs: round2(n.carbohydrates_100g || 0),
+        protein:  round2(n.proteins_100g || 0),
+        fat:      round2(n.fat_100g || 0),
+        sugar:    round2(n.sugars_100g || 0),
+        fiber:    round2(n.fiber_100g || 0),
+        sodium:   round2((n.sodium_100g || n.sodium || 0) * 1000),
+        carbs:    round2(n.carbohydrates_100g || 0),
       },
     };
   } catch (err) {
@@ -195,17 +248,14 @@ async function searchOpenFoodFacts(query) {
   }
 }
 
-/* ─────────────────────────────────────────────
-   🌍  SOURCE 3 — EDAMAM  (text search)
-   Good for fresh/whole foods & recipes
-───────────────────────────────────────────── */
+
 async function getNutritionFromEdamam(foodName) {
   try {
     const res = await axios.get("https://api.edamam.com/api/nutrition-data", {
       params: {
-        app_id: process.env.EDAMAM_APP_ID,
+        app_id:  process.env.EDAMAM_APP_ID,
         app_key: process.env.EDAMAM_APP_KEY,
-        ingr: `100g ${foodName}`,
+        ingr:    `100g ${foodName}`,
       },
       timeout: 8000,
     });
@@ -224,12 +274,12 @@ async function getNutritionFromEdamam(foodName) {
       ingredients: null,
       nutrition: {
         calories: round2(data.calories || 0),
-        protein: round2(n.PROCNT?.quantity || 0),
-        fat: round2(n.FAT?.quantity || 0),
-        sugar: round2(n.SUGAR?.quantity || 0),
-        fiber: round2(n.FIBTG?.quantity || 0),
-        sodium: round2(n.NA?.quantity || 0),
-        carbs: round2(n.CHOCDF?.quantity || 0),
+        protein:  round2(n.PROCNT?.quantity || 0),
+        fat:      round2(n.FAT?.quantity || 0),
+        sugar:    round2(n.SUGAR?.quantity || 0),
+        fiber:    round2(n.FIBTG?.quantity || 0),
+        sodium:   round2(n.NA?.quantity || 0),
+        carbs:    round2(n.CHOCDF?.quantity || 0),
       },
     };
   } catch (err) {
@@ -238,9 +288,7 @@ async function getNutritionFromEdamam(foodName) {
   }
 }
 
-/* ─────────────────────────────────────────────
-   📷  SOURCE 4 — LOGMEAL  (image → dish name)
-───────────────────────────────────────────── */
+
 async function recognizeFoodFromImage(imageBuffer) {
   const formData = new FormData();
   formData.append("image", imageBuffer, {
@@ -273,13 +321,11 @@ async function recognizeFoodFromImage(imageBuffer) {
   };
 }
 
-/* ─────────────────────────────────────────────
-   🔍 INPUT TYPE DETECTOR
-───────────────────────────────────────────── */
+
 function detectInputType(req) {
-  const barcode = req.body.barcode?.trim();
+  const barcode   = req.body.barcode?.trim();
   const textQuery = req.body.query?.trim();
-  const hasImage = !!req.file;
+  const hasImage  = !!req.file;
 
   if (barcode && /^\d{8,14}$/.test(barcode))
     return { type: "barcode", value: barcode };
@@ -289,60 +335,48 @@ function detectInputType(req) {
   return { type: "unknown" };
 }
 
-/* ─────────────────────────────────────────────
-   🚀 MAIN CONTROLLER
-───────────────────────────────────────────── */
+
 exports.analyzeFoodImage = async (req, res) => {
   try {
     const { userId, goal = "general" } = req.body;
     const input = detectInputType(req);
 
-    let productData = null; // { source, foodName, brand, nutrition, nutriScore, ... }
-    let logmealMeta = null; // LogMeal raw result for image inputs
-    let warning = null;
+    let productData = null;
+    let logmealMeta = null;
+    let warning     = null;
 
-    /* ══════════════════════════════════════════
-       ROUTE 1: BARCODE
-    ══════════════════════════════════════════ */
+
     if (input.type === "barcode") {
       console.log("📦 Barcode scan:", input.value);
       productData = await getProductByBarcode(input.value);
 
       if (!productData) {
         return res.status(404).json({
-          message: "Product not found for this barcode. Try searching by name.",
+          message: "Product not found for this barcode, Check Your Internet Connection or Try searching by name.",
         });
       }
+
     } else if (input.type === "image") {
-      /* ══════════════════════════════════════════
-       ROUTE 2: IMAGE
-       Step 1 → LogMeal recognition
-       Step 2 → if confidence OK → Edamam
-       Step 3 → if poor result  → Open Food Facts text search
-    ══════════════════════════════════════════ */
+      
       console.log("🖼️  Image analysis starting...");
 
       try {
         logmealMeta = await recognizeFoodFromImage(input.value);
       } catch (logmealErr) {
         console.error("LogMeal failed:", logmealErr.message);
-        warning =
-          "Image recognition service unavailable. Please try a text search.";
+        warning = "Image recognition service unavailable. Please try a text search.";
         return res.status(503).json({ message: warning });
       }
 
       let { name: logmealName, confidence } = logmealMeta;
 
-      // 🧠 normalize image result using Wikipedia
       if (logmealName) {
         logmealName = await normalizeFoodWikipedia(logmealName);
       }
       console.log(`LogMeal → "${logmealName}" (${round2(confidence * 100)}%)`);
 
       if (!logmealName || confidence < 0.3) {
-        // Very uncertain — try Open Food Facts text search with whatever name we got
-        warning =
-          "Low confidence image recognition. Falling back to food database search.";
+        warning = "Low confidence image recognition. Falling back to food database search.";
         if (logmealName) {
           productData =
             (await searchOpenFoodFacts(logmealName)) ||
@@ -350,14 +384,11 @@ exports.analyzeFoodImage = async (req, res) => {
         }
         if (!productData) {
           return res.status(422).json({
-            message:
-              "Could not identify this food. Try uploading a clearer image or use text/barcode search.",
+            message: "Could not identify this food. Try uploading a clearer image or use text/barcode search.",
             logmealResults: logmealMeta?.allResults || [],
           });
         }
       } else {
-        // Good confidence — try Edamam first (better for fresh/cooked food)
-        // then fall back to Open Food Facts
         productData =
           (await getNutritionFromEdamam(logmealName)) ||
           (await searchOpenFoodFacts(logmealName));
@@ -370,49 +401,36 @@ exports.analyzeFoodImage = async (req, res) => {
           });
         }
 
-        // Confidence warning (still usable)
         if (confidence < 0.6) {
           warning = `Detection confidence is ${round2(confidence * 100)}% — results may not be fully accurate.`;
         }
 
-        // Override foodName with LogMeal name (Edamam returns same name)
         productData.foodName = logmealName;
       }
+
     } else if (input.type === "text") {
-      /* ══════════════════════════════════════════
-       ROUTE 3: TEXT SEARCH
-       Try Open Food Facts first (better for brands/packaged)
-       Then Edamam (better for fresh foods)
-    ══════════════════════════════════════════ */
+      
       console.log("🔤 Text search:", input.value);
 
-      // 🧠 STEP 1: normalize input using Wikipedia (FREE AI replacement)
       let query = await normalizeFoodWikipedia(input.value);
-
       console.log("🧠 Normalized query:", query);
 
-      // 🔍 STEP 2: Open Food Facts
       productData = await searchOpenFoodFacts(query);
-
-      // 🌿 STEP 3: fallback to Edamam
-      if (!productData) {
-        productData = await getNutritionFromEdamam(query);
-      }
+      if (!productData) productData = await getNutritionFromEdamam(query);
 
       if (!productData) {
         return res.status(404).json({
           message: `No nutrition data found for "${input.value}". Try a different name.`,
         });
       }
+
     } else {
       return res.status(400).json({
         message: "Please provide an image, barcode, or food name to analyze.",
       });
     }
 
-    /* ══════════════════════════════════════════
-       SCORE & CLASSIFY
-    ══════════════════════════════════════════ */
+    
     const {
       nutrition,
       foodName,
@@ -423,7 +441,7 @@ exports.analyzeFoodImage = async (req, res) => {
       source,
     } = productData;
 
-    const fallbackImage = `https://source.unsplash.com/300x200/?${foodName})}`;
+    const fallbackImage = `https://source.unsplash.com/300x200/?${encodeURIComponent(foodName)}`;
 
     const finalImageUrl =
       imageUrl ||
@@ -431,19 +449,19 @@ exports.analyzeFoodImage = async (req, res) => {
       productData.image_small_url ||
       fallbackImage;
 
-    const score = calculateScore(nutrition, goal);
+    const score  = calculateScore(nutrition, goal);
     const status = classify(score);
-    const reason = generateReason(nutrition, nutriScore);
-    console.log(productData);
+    const reason = generateReason(nutrition, nutriScore, goal);
 
-    /* ══════════════════════════════════════════
-       SAVE TO DATABASE
-    ══════════════════════════════════════════ */
+    console.log(`[Score] ${foodName} → ${score} (${status}) | goal: ${goal}`);
+    console.log("[Nutrition]", nutrition);
+
+    
     const food = await Food.create({
       userId,
       foodName,
       brand,
-      imageUrl: finalImageUrl, // ✅ IMPORTANT FIX
+      imageUrl: finalImageUrl,
       ...nutrition,
       score,
       status,
@@ -451,36 +469,30 @@ exports.analyzeFoodImage = async (req, res) => {
       source,
     });
 
-    /* ══════════════════════════════════════════
-       RESPOND
-    ══════════════════════════════════════════ */
+    
     return res.json({
-      // Core result
       foodName,
       brand,
       score,
       status,
       reason,
       warning,
-
-      // Nutrition breakdown
       nutrition,
-
-      // Extra metadata
       nutriScore,
       ingredients,
       imageUrl,
       source,
 
-      // LogMeal specific (only for image inputs)
+      
       ...(logmealMeta && {
-        detectionConfidence: round2(logmealMeta.confidence * 100),
+        detectionConfidence:   round2(logmealMeta.confidence * 100),
         alternativeDetections: logmealMeta.allResults,
       }),
 
-      // DB record
+
       recordId: food._id,
     });
+
   } catch (err) {
     console.error("analyzeFoodImage error:", err.response?.data || err.message);
     return res.status(500).json({
@@ -490,9 +502,7 @@ exports.analyzeFoodImage = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   🔍 BARCODE LOOKUP (dedicated endpoint)
-───────────────────────────────────────────── */
+
 exports.lookupBarcode = async (req, res) => {
   const { barcode } = req.params;
 
@@ -508,15 +518,14 @@ exports.lookupBarcode = async (req, res) => {
   return res.json(product);
 };
 
-/* ─────────────────────────────────────────────
-   🔤 TEXT SEARCH (dedicated endpoint)
-───────────────────────────────────────────── */
+
 exports.searchFood = async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ message: "Query is required" });
 
   const result =
-    (await searchOpenFoodFacts(query)) || (await getNutritionFromEdamam(query));
+    (await searchOpenFoodFacts(query)) ||
+    (await getNutritionFromEdamam(query));
 
   if (!result) {
     return res.status(404).json({ message: `No results for "${query}"` });

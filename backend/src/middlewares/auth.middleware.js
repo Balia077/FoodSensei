@@ -5,7 +5,7 @@ const authMiddleware = (req, res, next) => {
 
   if (!token) {
     return res.status(401).json({
-      message: "Not Authenticated",
+      message: "Not Authenticated Make Sure to Register or Login first",
     });
   }
 

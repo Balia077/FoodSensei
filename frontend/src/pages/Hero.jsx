@@ -3,6 +3,8 @@ import Navbar from '../components/Navbar'
 import HeroText from '../components/HeroText'
 import Features from '../components/Features'
 import Marquee from '../components/Marquee'
+import About from '../components/About'
+import Footer from '../components/Footer'
 
 const Home = () => {
   return (
@@ -11,6 +13,8 @@ const Home = () => {
       <HeroText />
       <Marquee />
       <Features />
+      <About />
+      <Footer />
 
     </div>
   )

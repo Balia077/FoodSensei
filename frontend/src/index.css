@@ -9,6 +9,21 @@
 }
 
 @font-face {
+  font-family: 'font-2';
+  src: url('./fonts/FoundersGrotesk-Semibold.ttf');
+}
+
+@font-face{
+  font-family: 'font-3';
+  src: url('./fonts/NeueMontreal-Regular.ttf');
+}
+
+@font-face{
+  font-family: 'font-4';
+  src: url('./fonts/icomoon.ttf');
+}
+
+@font-face {
   font-family: "lemon-milk";
   src: url("./fonts/lemon_milk_woff2/LEMONMILK-Bold.woff2") format("woff2"),
 }

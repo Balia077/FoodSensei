@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -8,9 +8,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { useNavigate } from "react-router-dom";
 
-// ─── API ────────────────────────────────────────────────────────────────────
+// ─── API ─────────────────────────────────────────────────────────────────────
 const API_BASE = "http://localhost:3000/api";
 
 async function apiPost(path, body, isFormData = false) {
@@ -25,14 +24,7 @@ async function apiPost(path, body, isFormData = false) {
   return data;
 }
 
-async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
-  const data = await res.json();
-  if (!res.ok) throw { status: res.status, ...data };
-  return data;
-}
-
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const GOALS = [
   { value: "general", label: "General Health" },
   { value: "weight_loss", label: "Weight Loss" },
@@ -40,49 +32,85 @@ const GOALS = [
 ];
 
 const STATUS_CONFIG = {
-  HEALTHY: { color: "#4ade80", bg: "#052e16", label: "Healthy", icon: "✦" },
-  MODERATE: { color: "#fbbf24", bg: "#2d1b00", label: "Moderate", icon: "◈" },
-  UNHEALTHY: { color: "#f87171", bg: "#2d0a0a", label: "Unhealthy", icon: "⬡" },
+  HEALTHY: {
+    color: "#3B6D11",
+    bg: "#EAF3DE",
+    border: "#C0DD97",
+    label: "Healthy",
+    dot: "#639922",
+  },
+  MODERATE: {
+    color: "#854F0B",
+    bg: "#FAEEDA",
+    border: "#FAC775",
+    label: "Moderate",
+    dot: "#BA7517",
+  },
+  UNHEALTHY: {
+    color: "#A32D2D",
+    bg: "#FCEBEB",
+    border: "#F7C1C1",
+    label: "Unhealthy",
+    dot: "#E24B4A",
+  },
 };
 
 const SOURCE_LABELS = {
   logmeal: "LogMeal AI",
   edamam: "Edamam",
-  openfoodfacts_barcode: "Open Food Facts (Barcode)",
+  openfoodfacts_barcode: "Open Food Facts",
   openfoodfacts_search: "Open Food Facts",
 };
 
-// ─── COMPONENTS ──────────────────────────────────────────────────────────────
+const NUTRISCORE_COLORS = {
+  a: "#1a7a4a",
+  b: "#56a832",
+  c: "#d4c400",
+  d: "#e67800",
+  e: "#c41800",
+};
 
+const CHART_COLORS = [
+  "#7F77DD",
+  "#378ADD",
+  "#BA7517",
+  "#E24B4A",
+  "#D85A30",
+  "#1D9E75",
+];
+
+const NUTRI_MAXES = {
+  calories: 600,
+  protein: 50,
+  carbs: 80,
+  fat: 40,
+  sugar: 30,
+  fiber: 15,
+  sodium: 800,
+};
+
+// ─── SCORE RING ───────────────────────────────────────────────────────────────
 function ScoreRing({ score, status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.MODERATE;
-  const r = 54;
+  const r = 46;
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
+
   return (
-    <div
-      style={{ position: "relative", width: 140, height: 140, flexShrink: 0 }}
-    >
-      <svg width="140" height="140" style={{ transform: "rotate(-90deg)" }}>
+    <div style={{ position: "relative", width: 116, height: 116, flexShrink: 0 }}>
+      <svg width="116" height="116" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="58" cy="58" r={r} fill="none" stroke="#e5e7eb" strokeWidth="8" />
         <circle
-          cx="70"
-          cy="70"
+          cx="58"
+          cy="58"
           r={r}
           fill="none"
-          stroke="#1a1a2e"
-          strokeWidth="10"
-        />
-        <circle
-          cx="70"
-          cy="70"
-          r={r}
-          fill="none"
-          stroke={cfg.color}
-          strokeWidth="10"
+          stroke={cfg.dot}
+          strokeWidth="8"
           strokeDasharray={circ}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 1s ease" }}
+          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.4,0,0.2,1)" }}
         />
       </svg>
       <div
@@ -93,27 +121,13 @@ function ScoreRing({ score, status }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: 1,
         }}
       >
-        <span
-          style={{
-            fontSize: 32,
-            fontWeight: 800,
-            color: cfg.color,
-            fontFamily: "'Bebas Neue', sans-serif",
-            letterSpacing: 1,
-          }}
-        >
+        <span style={{ fontSize: 30, fontWeight: 700, color: cfg.dot, lineHeight: 1, fontFamily: "'DM Mono', monospace" }}>
           {score}
         </span>
-        <span
-          style={{
-            fontSize: 10,
-            color: "#666",
-            textTransform: "uppercase",
-            letterSpacing: 2,
-          }}
-        >
+        <span style={{ fontSize: 10, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.15em" }}>
           score
         </span>
       </div>
@@ -121,53 +135,27 @@ function ScoreRing({ score, status }) {
   );
 }
 
+// ─── NUTRI BAR ────────────────────────────────────────────────────────────────
 function NutriBar({ label, value, unit = "g", max, color }) {
   const pct = Math.min(100, (value / max) * 100);
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 4,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 12,
-            color: "#888",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-          }}
-        >
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em" }}>
           {label}
         </span>
-        <span
-          style={{
-            fontSize: 12,
-            color: "#ccc",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {value}
-          {unit}
+        <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "'DM Mono', monospace" }}>
+          {value}{unit}
         </span>
       </div>
-      <div
-        style={{
-          height: 4,
-          background: "#1e1e2e",
-          borderRadius: 2,
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ height: 3, background: "#f3f4f6", borderRadius: 2, overflow: "hidden" }}>
         <div
           style={{
             width: `${pct}%`,
             height: "100%",
             background: color,
             borderRadius: 2,
-            transition: "width 0.8s ease",
+            transition: "width 0.9s cubic-bezier(0.4,0,0.2,1)",
           }}
         />
       </div>
@@ -175,30 +163,56 @@ function NutriBar({ label, value, unit = "g", max, color }) {
   );
 }
 
-function NutriscoreBadge({ grade }) {
-  if (!grade || grade === "unknown") return null;
-  const colors = {
-    a: "#1a7a4a",
-    b: "#56a832",
-    c: "#d4c400",
-    d: "#e67800",
-    e: "#c41800",
-  };
-  const bg = colors[grade.toLowerCase()] || "#444";
+// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.MODERATE;
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 4,
+        gap: 5,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "3px 9px",
+        borderRadius: 4,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+      }}
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: cfg.dot,
+          flexShrink: 0,
+        }}
+      />
+      {cfg.label}
+    </span>
+  );
+}
+
+// ─── NUTRISCORE BADGE ─────────────────────────────────────────────────────────
+function NutriscoreBadge({ grade }) {
+  if (!grade || grade === "unknown") return null;
+  const bg = NUTRISCORE_COLORS[grade.toLowerCase()] || "#6b7280";
+  return (
+    <span
+      style={{
+        display: "inline-block",
         background: bg,
         color: "#fff",
         fontSize: 11,
         fontWeight: 700,
-        padding: "2px 8px",
-        borderRadius: 3,
+        padding: "3px 8px",
+        borderRadius: 4,
         textTransform: "uppercase",
-        letterSpacing: 1,
+        letterSpacing: "0.08em",
       }}
     >
       Nutri-Score {grade.toUpperCase()}
@@ -206,192 +220,101 @@ function NutriscoreBadge({ grade }) {
   );
 }
 
-function Tag({ children, color = "#334" }) {
+// ─── SOURCE TAG ───────────────────────────────────────────────────────────────
+function SourceTag({ source }) {
+  if (!source) return null;
   return (
     <span
       style={{
+        display: "inline-block",
         fontSize: 10,
         textTransform: "uppercase",
-        letterSpacing: 1.5,
-        color: "#aaa",
-        background: color,
-        padding: "3px 8px",
-        borderRadius: 2,
+        letterSpacing: "0.12em",
+        color: "#9ca3af",
+        background: "#f9fafb",
+        border: "1px solid #e5e7eb",
+        padding: "2px 7px",
+        borderRadius: 3,
       }}
     >
-      {children}
+      {SOURCE_LABELS[source] || source}
     </span>
   );
 }
 
+// ─── RESULT VIEW ──────────────────────────────────────────────────────────────
 function ResultView({ result, onReset }) {
   const { nutrition = {} } = result;
-  const cfg = STATUS_CONFIG[result.status] || STATUS_CONFIG.MODERATE;
 
   const chartData = [
-    {
-      name: "Calories",
-      value: nutrition.calories || 0,
-      max: 600,
-      color: "#e879f9",
-    },
-    {
-      name: "Protein",
-      value: nutrition.protein || 0,
-      max: 50,
-      color: "#60a5fa",
-    },
-    { name: "Carbs", value: nutrition.carbs || 0, max: 80, color: "#fbbf24" },
-    { name: "Fat", value: nutrition.fat || 0, max: 40, color: "#f87171" },
-    { name: "Sugar", value: nutrition.sugar || 0, max: 30, color: "#fb923c" },
-    { name: "Fiber", value: nutrition.fiber || 0, max: 15, color: "#4ade80" },
-    {
-      name: "Sodium",
-      value: nutrition.sodium || 0,
-      max: 800,
-      color: "#94a3b8",
-      unit: "mg",
-    },
+    { name: "Calories", value: nutrition.calories || 0, color: CHART_COLORS[0] },
+    { name: "Protein",  value: nutrition.protein  || 0, color: CHART_COLORS[1] },
+    { name: "Carbs",    value: nutrition.carbs    || 0, color: CHART_COLORS[2] },
+    { name: "Fat",      value: nutrition.fat      || 0, color: CHART_COLORS[3] },
+    { name: "Sugar",    value: nutrition.sugar    || 0, color: CHART_COLORS[4] },
+    { name: "Fiber",    value: nutrition.fiber    || 0, color: CHART_COLORS[5] },
+  ];
+
+  const nutriBars = [
+    { label: "Calories", value: nutrition.calories || 0, unit: "kcal", max: NUTRI_MAXES.calories, color: CHART_COLORS[0] },
+    { label: "Protein",  value: nutrition.protein  || 0, unit: "g",    max: NUTRI_MAXES.protein,  color: CHART_COLORS[1] },
+    { label: "Carbs",    value: nutrition.carbs    || 0, unit: "g",    max: NUTRI_MAXES.carbs,    color: CHART_COLORS[2] },
+    { label: "Fat",      value: nutrition.fat      || 0, unit: "g",    max: NUTRI_MAXES.fat,      color: CHART_COLORS[3] },
+    { label: "Sugar",    value: nutrition.sugar    || 0, unit: "g",    max: NUTRI_MAXES.sugar,    color: CHART_COLORS[4] },
+    { label: "Fiber",    value: nutrition.fiber    || 0, unit: "g",    max: NUTRI_MAXES.fiber,    color: CHART_COLORS[5] },
+    { label: "Sodium",   value: nutrition.sodium   || 0, unit: "mg",   max: NUTRI_MAXES.sodium,   color: "#888780" },
   ];
 
   return (
-    <div style={{ animation: "fadeUp 0.5s ease" }}>
-      {/* Header card */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)",
-          border: `1px solid ${cfg.color}33`,
-          borderRadius: 16,
-          padding: 24,
-          marginBottom: 16,
-          display: "flex",
-          gap: 24,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <ScoreRing score={result.score} status={result.status} />
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              marginBottom: 8,
-            }}
-          >
-            <span
-              style={{
-                background: cfg.bg,
-                color: cfg.color,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 2,
-                padding: "3px 10px",
-                borderRadius: 3,
-                textTransform: "uppercase",
-              }}
-            >
-              {cfg.icon} {cfg.label}
-            </span>
-            {result.nutriScore && <NutriscoreBadge grade={result.nutriScore} />}
-            {result.source && (
-              <Tag>{SOURCE_LABELS[result.source] || result.source}</Tag>
+    <div style={{ animation: "fadeUp 0.4s ease" }}>
+      {/* Header */}
+      <div style={styles.card}>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+          <ScoreRing score={result.score} status={result.status} />
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+              <StatusBadge status={result.status} />
+              {result.nutriScore && <NutriscoreBadge grade={result.nutriScore} />}
+              <SourceTag source={result.source} />
+            </div>
+            <h2 style={{ margin: "0 0 3px", fontSize: 20, fontWeight: 700, color: "#111827", letterSpacing: "0.02em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
+              {result.foodName}
+            </h2>
+            {result.brand && (
+              <p style={{ margin: "0 0 6px", fontSize: 12, color: "#9ca3af" }}>by {result.brand}</p>
             )}
-          </div>
-          <h2
-            style={{
-              margin: "0 0 4px",
-              fontSize: 22,
-              fontWeight: 800,
-              color: "#f0f0f0",
-              fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            {result.foodName}
-          </h2>
-          {result.brand && (
-            <p style={{ margin: "0 0 6px", fontSize: 12, color: "#666" }}>
-              by {result.brand}
+            <p style={{ margin: 0, fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
+              {result.reason}
             </p>
-          )}
-          <p
-            style={{ margin: 0, fontSize: 13, color: "#999", lineHeight: 1.5 }}
-          >
-            {result.reason}
-          </p>
+          </div>
         </div>
       </div>
 
+      {/* Food image */}
       {result.imageUrl && (
         <img
           src={result.imageUrl}
           alt={result.foodName}
-          style={{
-            width: "100%",
-            maxHeight: 220,
-            objectFit: "cover",
-            borderRadius: 12,
-            marginBottom: 16,
-            border: "1px solid #1a1a2e",
-          }}
+          style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12, marginBottom: 12, border: "1px solid #e5e7eb" }}
         />
       )}
 
       {/* Warning */}
       {result.warning && (
-        <div
-          style={{
-            background: "#1a1500",
-            border: "1px solid #fbbf2440",
-            borderRadius: 8,
-            padding: "10px 14px",
-            marginBottom: 16,
-            fontSize: 13,
-            color: "#fbbf24",
-          }}
-        >
-          ⚠ {result.warning}
+        <div style={{ background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#854F0B", display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+          <span>{result.warning}</span>
         </div>
       )}
 
       {/* Alternative detections */}
       {result.alternativeDetections?.length > 0 && (
-        <div
-          style={{
-            background: "#0f0f1a",
-            border: "1px solid #ffffff0d",
-            borderRadius: 8,
-            padding: 14,
-            marginBottom: 16,
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 8px",
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#555",
-            }}
-          >
-            Alternative Detections
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={styles.card}>
+          <p style={styles.sectionLabel}>Alternative detections</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {result.alternativeDetections.map((d, i) => (
-              <span
-                key={i}
-                style={{
-                  fontSize: 12,
-                  color: "#aaa",
-                  background: "#1a1a2e",
-                  padding: "4px 10px",
-                  borderRadius: 20,
-                }}
-              >
-                {d.name} <span style={{ color: "#555" }}>{d.confidence}%</span>
+              <span key={i} style={{ fontSize: 12, color: "#6b7280", background: "#f9fafb", border: "1px solid #e5e7eb", padding: "4px 10px", borderRadius: 20 }}>
+                {d.name} <span style={{ color: "#d1d5db" }}>{d.confidence}%</span>
               </span>
             ))}
           </div>
@@ -399,80 +322,32 @@ function ResultView({ result, onReset }) {
       )}
 
       {/* Nutrition bars */}
-      <div
-        style={{
-          background: "#0f0f1a",
-          border: "1px solid #ffffff0d",
-          borderRadius: 12,
-          padding: 20,
-          marginBottom: 16,
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 14px",
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            color: "#555",
-          }}
-        >
-          Nutrition per 100g
-        </p>
-        {chartData.map((d) => (
-          <NutriBar
-            key={d.name}
-            label={d.name}
-            value={d.value}
-            unit={d.unit || "g"}
-            max={d.max}
-            color={d.color}
-          />
+      <div style={styles.card}>
+        <p style={styles.sectionLabel}>Nutrition per 100g</p>
+        {nutriBars.map((b) => (
+          <NutriBar key={b.label} label={b.label} value={b.value} unit={b.unit} max={b.max} color={b.color} />
         ))}
       </div>
 
       {/* Chart */}
-      <div
-        style={{
-          background: "#0f0f1a",
-          border: "1px solid #ffffff0d",
-          borderRadius: 12,
-          padding: 20,
-          marginBottom: 16,
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 14px",
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            color: "#555",
-          }}
-        >
-          Breakdown
-        </p>
+      <div style={styles.card}>
+        <p style={styles.sectionLabel}>Breakdown</p>
         <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={chartData.slice(0, 6)} barCategoryGap="30%">
+          <BarChart data={chartData} barCategoryGap="32%">
             <XAxis
               dataKey="name"
-              tick={{ fill: "#555", fontSize: 10 }}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis hide />
             <Tooltip
-              contentStyle={{
-                background: "#1a1a2e",
-                border: "1px solid #333",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-              labelStyle={{ color: "#aaa" }}
-              itemStyle={{ color: "#fff" }}
+              contentStyle={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+              labelStyle={{ color: "#374151", fontWeight: 600 }}
+              itemStyle={{ color: "#6b7280" }}
             />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {chartData.slice(0, 6).map((d, i) => (
+              {chartData.map((d, i) => (
                 <Cell key={i} fill={d.color} />
               ))}
             </Bar>
@@ -482,29 +357,9 @@ function ResultView({ result, onReset }) {
 
       {/* Ingredients */}
       {result.ingredients && (
-        <div
-          style={{
-            background: "#0f0f1a",
-            border: "1px solid #ffffff0d",
-            borderRadius: 12,
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 8px",
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              color: "#555",
-            }}
-          >
-            Ingredients
-          </p>
-          <p
-            style={{ margin: 0, fontSize: 12, color: "#777", lineHeight: 1.7 }}
-          >
+        <div style={styles.card}>
+          <p style={styles.sectionLabel}>Ingredients</p>
+          <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", lineHeight: 1.8 }}>
             {result.ingredients}
           </p>
         </div>
@@ -512,130 +367,22 @@ function ResultView({ result, onReset }) {
 
       {/* Detection confidence */}
       {result.detectionConfidence != null && (
-        <p
-          style={{
-            fontSize: 11,
-            color: "#444",
-            textAlign: "right",
-            margin: "0 0 16px",
-          }}
-        >
+        <p style={{ fontSize: 11, color: "#d1d5db", textAlign: "right", margin: "0 0 12px" }}>
           Image detection confidence: {result.detectionConfidence}%
         </p>
       )}
 
       <button
         onClick={onReset}
-        style={{
-          width: "100%",
-          padding: "13px 0",
-          background: "transparent",
-          border: "1px solid #333",
-          borderRadius: 8,
-          color: "#666",
-          fontSize: 13,
-          letterSpacing: 1.5,
-          textTransform: "uppercase",
-          cursor: "pointer",
-          transition: "all 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.borderColor = "#555";
-          e.target.style.color = "#aaa";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.borderColor = "#333";
-          e.target.style.color = "#666";
-        }}
+        style={styles.ghostBtn}
+        onMouseEnter={(e) => { e.target.style.background = "#f9fafb"; e.target.style.borderColor = "#9ca3af"; e.target.style.color = "#374151"; }}
+        onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.borderColor = "#e5e7eb"; e.target.style.color = "#9ca3af"; }}
       >
         ← Analyze Another Food
       </button>
     </div>
   );
 }
-
-// ─── TAB: IMAGE ───────────────────────────────────────────────────────────────
-// function ImageTab({ goal, onResult, loading, setLoading }) {
-//   const [file, setFile] = useState(null);
-//   const [preview, setPreview] = useState(null);
-//   const [dragging, setDragging] = useState(false);
-//   const inputRef = useRef();
-
-//   const pickFile = (f) => {
-//     if (!f) return;
-//     setFile(f);
-//     setPreview(URL.createObjectURL(f));
-//   };
-
-//   const handleDrop = (e) => {
-//     e.preventDefault(); setDragging(false);
-//     pickFile(e.dataTransfer.files[0]);
-//   };
-
-//   const submit = async () => {
-//     if (!file) return;
-//     setLoading(true);
-//     try {
-//       const fd = new FormData();
-//       fd.append("image", file);
-//       fd.append("userId", "123");
-//       fd.append("goal", goal);
-//       const data = await apiPost("/food/analyze-image", fd, true);
-//       onResult(data);
-//     } catch (err) {
-//       alert(err.message || "Analysis failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <div
-//         onClick={() => inputRef.current.click()}
-//         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-//         onDragLeave={() => setDragging(false)}
-//         onDrop={handleDrop}
-//         style={{
-//           border: `1.5px dashed ${dragging ? "#60a5fa" : preview ? "#333" : "#2a2a3e"}`,
-//           borderRadius: 12, minHeight: 200,
-//           display: "flex", flexDirection: "column",
-//           alignItems: "center", justifyContent: "center",
-//           cursor: "pointer", background: dragging ? "#0a1628" : "#0a0a14",
-//           overflow: "hidden", transition: "all 0.2s",
-//           position: "relative",
-//         }}>
-//         {preview ? (
-//           <img src={preview} alt="preview" style={{
-//             width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 10,
-//           }} />
-//         ) : (
-//           <>
-//             <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.3 }}>⬆</div>
-//             <p style={{ margin: 0, fontSize: 13, color: "#444" }}>
-//               {dragging ? "Drop it!" : "Click or drag a food photo here"}
-//             </p>
-//           </>
-//         )}
-//         <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-//           onChange={e => pickFile(e.target.files[0])} />
-//       </div>
-
-//       {file && (
-//         <button onClick={submit} disabled={loading} style={{
-//           width: "100%", marginTop: 12, padding: "13px 0",
-//           background: loading ? "#1a1a2e" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-//           border: "none", borderRadius: 8, color: loading ? "#555" : "#fff",
-//           fontSize: 13, fontWeight: 700, letterSpacing: 2,
-//           textTransform: "uppercase", cursor: loading ? "default" : "pointer",
-//           transition: "all 0.2s",
-//         }}>
-//           {loading ? "Analyzing…" : "Analyze Image"}
-//         </button>
-//       )}
-//     </div>
-//   );
-// }
 
 // ─── TAB: BARCODE ─────────────────────────────────────────────────────────────
 function BarcodeTab({ goal, onResult, loading, setLoading }) {
@@ -658,59 +405,24 @@ function BarcodeTab({ goal, onResult, loading, setLoading }) {
     }
   };
 
+  const isDisabled = loading || !barcode.trim();
+
   return (
     <div>
-      <p
-        style={{
-          margin: "0 0 12px",
-          fontSize: 12,
-          color: "#555",
-          letterSpacing: 1,
-        }}
-      >
-        Enter barcode number (8–14 digits)
-      </p>
+      <p style={styles.fieldHint}>Enter barcode number (8–14 digits)</p>
       <input
         type="text"
         value={barcode}
         onChange={(e) => setBarcode(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="e.g. 8901058857846"
-        style={{
-          width: "100%",
-          padding: "12px 14px",
-          boxSizing: "border-box",
-          background: "#0a0a14",
-          border: "1px solid #1e1e2e",
-          borderRadius: 8,
-          color: "#eee",
-          fontSize: 15,
-          fontFamily: "monospace",
-          letterSpacing: 2,
-          outline: "none",
-        }}
+        maxLength={14}
+        style={{ ...styles.input, fontFamily: "'DM Mono', monospace", letterSpacing: "0.1em" }}
       />
       <button
         onClick={submit}
-        disabled={loading || !barcode.trim()}
-        style={{
-          width: "100%",
-          marginTop: 12,
-          padding: "13px 0",
-          background:
-            loading || !barcode.trim()
-              ? "#1a1a2e"
-              : "linear-gradient(135deg, #06b6d4, #3b82f6)",
-          border: "none",
-          borderRadius: 8,
-          color: loading || !barcode.trim() ? "#555" : "#fff",
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          cursor: loading || !barcode.trim() ? "default" : "pointer",
-          transition: "all 0.2s",
-        }}
+        disabled={isDisabled}
+        style={{ ...styles.submitBtn, opacity: isDisabled ? 0.45 : 1, cursor: isDisabled ? "default" : "pointer" }}
       >
         {loading ? "Looking up…" : "Look Up Barcode"}
       </button>
@@ -739,57 +451,23 @@ function TextTab({ goal, onResult, loading, setLoading }) {
     }
   };
 
+  const isDisabled = loading || !query.trim();
+
   return (
     <div>
-      <p
-        style={{
-          margin: "0 0 12px",
-          fontSize: 12,
-          color: "#555",
-          letterSpacing: 1,
-        }}
-      >
-        Search by food or product name
-      </p>
+      <p style={styles.fieldHint}>Search by food or product name</p>
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="e.g. Maggi noodles, apple, chicken breast"
-        style={{
-          width: "100%",
-          padding: "12px 14px",
-          boxSizing: "border-box",
-          background: "#0a0a14",
-          border: "1px solid #1e1e2e",
-          borderRadius: 8,
-          color: "#eee",
-          fontSize: 14,
-          outline: "none",
-        }}
+        style={styles.input}
       />
       <button
         onClick={submit}
-        disabled={loading || !query.trim()}
-        style={{
-          width: "100%",
-          marginTop: 12,
-          padding: "13px 0",
-          background:
-            loading || !query.trim()
-              ? "#1a1a2e"
-              : "linear-gradient(135deg, #10b981, #059669)",
-          border: "none",
-          borderRadius: 8,
-          color: loading || !query.trim() ? "#555" : "#fff",
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          cursor: loading || !query.trim() ? "default" : "pointer",
-          transition: "all 0.2s",
-        }}
+        disabled={isDisabled}
+        style={{ ...styles.submitBtn, opacity: isDisabled ? 0.45 : 1, cursor: isDisabled ? "default" : "pointer" }}
       >
         {loading ? "Searching…" : "Search Food"}
       </button>
@@ -797,218 +475,302 @@ function TextTab({ goal, onResult, loading, setLoading }) {
   );
 }
 
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// ─── SHARED STYLES ────────────────────────────────────────────────────────────
+const styles = {
+  card: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: "18px 20px",
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    margin: "0 0 12px",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: "0.15em",
+    color: "#d1d5db",
+    fontWeight: 600,
+  },
+  input: {
+    width: "100%",
+    padding: "11px 13px",
+    boxSizing: "border-box",
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    color: "#111827",
+    fontSize: 14,
+    fontFamily: "'DM Sans', sans-serif",
+    outline: "none",
+    transition: "border-color 0.15s",
+  },
+  submitBtn: {
+    width: "100%",
+    marginTop: 10,
+    padding: "12px 0",
+    background: "#111827",
+    border: "1px solid #111827",
+    borderRadius: 8,
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    fontFamily: "'DM Sans', sans-serif",
+    transition: "all 0.15s",
+  },
+  ghostBtn: {
+    width: "100%",
+    padding: "12px 0",
+    background: "transparent",
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    color: "#9ca3af",
+    fontSize: 12,
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    cursor: "pointer",
+    fontFamily: "'DM Sans', sans-serif",
+    transition: "all 0.15s",
+  },
+  fieldHint: {
+    margin: "0 0 10px",
+    fontSize: 12,
+    color: "#9ca3af",
+    letterSpacing: "0.04em",
+  },
+};
+
+// ─── TABS CONFIG ──────────────────────────────────────────────────────────────
 const TABS = [
-  // { id: "image",   label: "📷 Image",   color: "#8b5cf6" },
-  { id: "barcode", label: "⬡ Barcode (Recommended)", color: "#06b6d4" },
-  { id: "text", label: "🔤 Search", color: "#10b981" },
+  { id: "barcode", label: "Barcode" },
+  { id: "text",    label: "Search"  },
 ];
 
+// ─── LOADING SPINNER ──────────────────────────────────────────────────────────
+function LoadingState() {
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: "20px 0",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 10,
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+      }}
+    >
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          border: "2px solid #e5e7eb",
+          borderTopColor: "#374151",
+          animation: "spin 0.7s linear infinite",
+        }}
+      />
+      <p style={{ margin: 0, fontSize: 11, color: "#9ca3af", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+        Analyzing nutrition data…
+      </p>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function Analyze() {
   const [tab, setTab] = useState("barcode");
   const [goal, setGoal] = useState("general");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const activeTab = TABS.find((t) => t.id === tab);
-
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #EFF5F3; color: #000; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; background: #f9fafb; color: #111827; -webkit-font-smoothing: antialiased; }
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input:focus { border-color: #9ca3af !important; background: #fff !important; }
+        input::placeholder { color: #d1d5db; }
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0a0a14; }
-        ::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: #f3f4f6; }
+        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+
+        @media (max-width: 640px) {
+          .analyze-container { width: 100% !important; padding: 0 !important; }
+          .analyze-page { padding: 20px 16px 48px !important; }
+          .goal-group { flex-direction: column !important; }
+          .goal-btn { min-width: unset !important; }
+          .result-header { flex-direction: column !important; align-items: flex-start !important; }
+        }
+
+        @media (min-width: 641px) and (max-width: 900px) {
+          .analyze-container { width: 90% !important; }
+        }
       `}</style>
 
-      <div style={{ minHeight: "91vh", padding: "24px 16px 48px" }}>
-        <div style={{ width: "60%", margin: "0 auto" }}>
-          {/* Logo */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: 28,
-              animation: "fadeUp 0.4s ease",
-            }}
-          >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 42,
-                fontFamily: "'Bebas Neue', sans-serif",
-                letterSpacing: 5,
-                textTransform: "uppercase",
-                background:
-                  "linear-gradient(135deg, #e879f9, #818cf8, #60a5fa)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Food Sensei
-            </h1>
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: 12,
-                color: "#333",
-                letterSpacing: 3,
-                textTransform: "uppercase",
-              }}
-            >
+      <div
+        className="analyze-page"
+        style={{
+          minHeight: "91vh",
+          background: "#EFF5F3",
+          padding: "85px 20px 64px",
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >
+        <div
+          className="analyze-container"
+          style={{ width: "56%", minWidth: 320, margin: "0 auto" }}
+        >
+          {/* Brand */}
+          <div style={{ textAlign: "center", marginBottom: 32, animation: "fadeUp 0.35s ease" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: "#111827",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="#fff" strokeWidth="1.5"/>
+                  <path d="M8 5v3l2 1.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "#111827",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Food Sensei
+              </h1>
+            </div>
+            <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", letterSpacing: "0.2em", textTransform: "uppercase" }}>
               Know what you eat
             </p>
           </div>
 
           {!result ? (
-            <div style={{ animation: "fadeUp 0.45s ease" }}>
+            <div style={{ animation: "fadeUp 0.4s ease" }}>
               {/* Goal selector */}
-              <div style={{ marginBottom: 15 }}>
+              <div style={{ marginBottom: 20 }}>
                 <p
                   style={{
                     margin: "0 0 8px",
-                    fontSize: 20,
-                    color: "#444",
-                    letterSpacing: 2,
+                    fontSize: 10,
+                    color: "#9ca3af",
+                    letterSpacing: "0.15em",
                     textTransform: "uppercase",
+                    fontWeight: 600,
                   }}
                 >
-                  Your Goal
+                  Your goal
                 </p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {GOALS.map((g) => (
-                    <button
-                      key={g.value}
-                      onClick={() => setGoal(g.value)}
-                      style={{
-                        flex: 1,
-                        padding: "8px 0",
-                        background:
-                          goal === g.value ? "#1a1a2e" : "transparent",
-                        border: `1px solid ${goal === g.value ? "#333" : "#1a1a2e"}`,
-                        borderRadius: 6,
-                        color: goal === g.value ? "#aaa" : "#444",
-                        fontSize: 15,
-                        cursor: "pointer",
-                        letterSpacing: 0.5,
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
+                <div className="goal-group" style={{ display: "flex", gap: 8 }}>
+                  {GOALS.map((g) => {
+                    const active = goal === g.value;
+                    return (
+                      <button
+                        key={g.value}
+                        className="goal-btn"
+                        onClick={() => setGoal(g.value)}
+                        style={{
+                          flex: 1,
+                          padding: "9px 10px",
+                          background: active ? "#111827" : "#fff",
+                          border: `1px solid ${active ? "#111827" : "#e5e7eb"}`,
+                          borderRadius: 8,
+                          color: active ? "#fff" : "#6b7280",
+                          fontSize: 13,
+                          fontWeight: active ? 600 : 400,
+                          cursor: "pointer",
+                          fontFamily: "'DM Sans', sans-serif",
+                          transition: "all 0.15s",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 0,
-                  marginBottom: 0,
-                  background: "#0a0a14",
-                  border: "1px solid #1a1a2e",
-                  borderBottom: "none",
-                  borderRadius: "10px 10px 0 0",
-                  overflow: "hidden",
-                }}
-              >
-                {TABS.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTab(t.id)}
-                    style={{
-                      flex: 1,
-                      padding: "11px 0",
-                      background: tab === t.id ? "#000" : "transparent",
-                      border: "none",
-                      borderBottom:
-                        tab === t.id
-                          ? `2px solid ${t.color}`
-                          : "2px solid transparent",
-                      color: tab === t.id ? "#fff" : "#999",
-                      fontSize: 15,
-                      fontWeight: tab === t.id ? 700 : 400,
-                      cursor: "pointer",
-                      letterSpacing: 0.5,
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Panel */}
-              <div
-                style={{
-                  background: "#0f0f1a",
-                  border: "1px solid #1a1a2e",
-                  borderTop: `2px solid ${activeTab.color}22`,
-                  borderRadius: "0 0 10px 10px",
-                  padding: 20,
-                }}
-              >
-                {tab === "barcode" && (
-                  <BarcodeTab
-                    goal={goal}
-                    onResult={setResult}
-                    loading={loading}
-                    setLoading={setLoading}
-                  />
-                )}
-                {tab === "text" && (
-                  <TextTab
-                    goal={goal}
-                    onResult={setResult}
-                    loading={loading}
-                    setLoading={setLoading}
-                  />
-                )}
-              </div>
-
-              {/* Loading state */}
-              {loading && (
-                <div
-                  style={{
-                    marginTop: 20,
-                    padding: 16,
-                    textAlign: "center",
-                    background: "#0a0a14",
-                    border: "1px solid #1a1a2e",
-                    borderRadius: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      border: "2px solid #1a1a2e",
-                      borderTop: `2px solid ${activeTab.color}`,
-                      animation: "spin 0.8s linear infinite",
-                      margin: "0 auto 8px",
-                    }}
-                  />
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 12,
-                      color: "#444",
-                      letterSpacing: 1.5,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Analyzing nutrition data…
-                  </p>
-                  <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+              {/* Card panel with tabs */}
+              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
+                {/* Tab bar */}
+                <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb" }}>
+                  {TABS.map((t) => {
+                    const active = tab === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setTab(t.id)}
+                        style={{
+                          flex: 1,
+                          padding: "12px 0",
+                          background: "none",
+                          border: "none",
+                          borderBottom: active ? "2px solid #111827" : "2px solid transparent",
+                          marginBottom: -1,
+                          color: active ? "#111827" : "#9ca3af",
+                          fontSize: 13,
+                          fontWeight: active ? 600 : 400,
+                          cursor: "pointer",
+                          fontFamily: "'DM Sans', sans-serif",
+                          transition: "all 0.15s",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+
+                {/* Tab content */}
+                <div style={{ padding: 20 }}>
+                  {tab === "barcode" && (
+                    <BarcodeTab
+                      goal={goal}
+                      onResult={setResult}
+                      loading={loading}
+                      setLoading={setLoading}
+                    />
+                  )}
+                  {tab === "text" && (
+                    <TextTab
+                      goal={goal}
+                      onResult={setResult}
+                      loading={loading}
+                      setLoading={setLoading}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Loading */}
+              {loading && <LoadingState />}
             </div>
           ) : (
             <ResultView result={result} onReset={() => setResult(null)} />

@@ -3,7 +3,6 @@ import { Search, ChevronDown, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-
 const Navbar = () => {
   const { loggedIn, logout, user } = useAuth();
   const navigate = useNavigate();
@@ -15,48 +14,37 @@ const Navbar = () => {
   };
 
   const profileOpener = async () => {
-    // For now, just open profile page on click 
+    // For now, just open profile page on click
 
-    navigate('/profile');
-
-  }
+    navigate("/profile");
+  };
 
   return (
     <nav className="bg-[#EFF5F3] px-4 lg:px-10 py-3 flex items-center justify-between relative">
-
       {/* Logo */}
-      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
-        Food<span className="text-[#00CD6E] font-[font-1]">Sensei</span>
-      </h2>
+      <Link to={"/"}>
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+          Food<span className="text-[#00CD6E] font-[font-1]">Sensei</span>
+        </h2>
+      </Link>
 
       {/* Desktop Links */}
-      <div className="hidden lg:flex gap-8 font-semibold items-center text-zinc-700">
+      <div className="hidden lg:flex gap-10 font-semibold items-center text-zinc-700">
         <Link to="/">Home</Link>
 
         <Link to={"/analyze"}>Analyze</Link>
 
-        <Link to="/foodproduct">Food Product</Link>
-        <Link to="#">About</Link>
-        <Link to="#">Contact</Link>
-      </div>
-
-      {/* Search */}
-      <div className="hidden sm:flex items-center gap-2 px-4 py-2 w-[40%] lg:w-[30%] rounded-full bg-white/30 backdrop-blur-md shadow-sm">
-        <Search size={18} />
-        <input
-          type="text"
-          placeholder="Search Food..."
-          className="bg-transparent outline-none w-full text-sm"
-        />
+        <Link to="/foodproduct">Food Log</Link>
+        <Link to="/about">About</Link>
+        <Link to="/contact">Contact</Link>
       </div>
 
       {/* Right Section */}
       <div className="hidden lg:flex items-center gap-4">
-
         {/* If NOT logged in */}
         {!loggedIn && (
           <Link to="/login">
-            <button className="relative overflow-hidden px-4 py-2 rounded-md font-bold shadow-sm group">
+            <button className="relative overflow-hidden px-4 py-2 rounded-md font-bold shadow-sm group cursor-pointer">
               <span className="absolute inset-0 bg-black scale-y-0 origin-bottom transition-transform duration-300 group-hover:scale-y-100"></span>
               <span className="relative z-10 group-hover:text-white transition">
                 Sign in
@@ -67,9 +55,7 @@ const Navbar = () => {
 
         {/* If logged in */}
         {loggedIn && (
-          <div
-            onClick={profileOpener}
-            className="flex items-center gap-3">
+          <div onClick={profileOpener} className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-black text-white cursor-pointer flex items-center justify-center font-bold">
               {getInitials()}
             </div>
@@ -90,29 +76,31 @@ const Navbar = () => {
           <Link to="/" onClick={() => setOpen(false)}>
             Home
           </Link>
-          <Link to="#" onClick={() => setOpen(false)}>
-            Feature
+          <Link to="/analyze" onClick={() => setOpen(false)}>
+            Analyze
           </Link>
-          <Link to="#" onClick={() => setOpen(false)}>
-            FP
+          <Link to="/foodproduct" onClick={() => setOpen(false)}>
+            Food Log
           </Link>
-          <Link to="#" onClick={() => setOpen(false)}>
+          <Link to="/about" onClick={() => setOpen(false)}>
             About
           </Link>
-          <Link to="#" onClick={() => setOpen(false)}>
+          <Link to="/contact" onClick={() => setOpen(false)}>
             Contact
           </Link>
 
           {!loggedIn ? (
-            <Link to="/login">
+            <Link to="/login" onClick={() => setOpen(false)}>
               <button className="font-bold px-5 py-2 border rounded-full">
                 Sign in
               </button>
             </Link>
           ) : (
-            <button className="font-bold px-5 py-2 border rounded-full">
-              Profile
-            </button>
+            <Link to={"/profile"} onClick={() => setOpen(false)}>
+              <button className="font-bold px-5 py-2 border rounded-full">
+                Profile
+              </button>
+            </Link>
           )}
         </div>
       )}

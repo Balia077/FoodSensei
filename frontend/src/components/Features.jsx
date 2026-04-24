@@ -1,5 +1,13 @@
 import React from "react";
-import { ScanLine, Search, BarChart3, Utensils, Activity, Apple } from "lucide-react";
+import {
+  ScanLine,
+  Search,
+  BarChart3,
+  Utensils,
+  Activity,
+  Apple,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Features = () => {
   const features = [
@@ -37,7 +45,6 @@ const Features = () => {
 
   return (
     <div className="min-h-screen w-full text-white bg-gradient-to-b from-zinc-950 via-zinc-900 to-black px-5 py-8 sm:px-10 md:px-14 rounded-tr-3xl rounded-tl-3xl">
-      
       {/* Mobile-first Header */}
       <div className="sticky top-0 z-10 backdrop-blur-xl bg-black/30 border-b border-white/10 py-4 mb-8">
         <h1 className="font-[thunder-font] text-3xl sm:text-4xl md:text-[4vw] tracking-wider">
@@ -79,11 +86,13 @@ const Features = () => {
       </div>
 
       {/* Mobile CTA bar */}
-      <div className="fixed bottom-4 left-0 right-0 flex justify-center sm:hidden">
-        <button className="bg-lime-400 text-black font-semibold px-6 py-3 rounded-full shadow-lg">
-          Start Tracking
-        </button>
-      </div>
+      <Link to={'/analyze'}>
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center sm:hidden">
+          <button className="bg-lime-400 text-black font-semibold px-6 py-3 rounded-full shadow-lg">
+            Start Tracking
+          </button>
+        </div>
+      </Link>
     </div>
   );
 };
