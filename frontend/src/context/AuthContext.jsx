@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api from '../api/axios';
+import api from '../api/api.js';
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const login = async (data) => {
+  const login = (data) => {
     setUser(data.user);
   };
 

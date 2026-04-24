@@ -31,7 +31,7 @@ export default function FoodCard({ food }) {
         <img
           src={
             food.imageUrl ||
-            `https://source.unsplash.com/400x300/?${encodeURIComponent(food.foodName || "food")}`
+            `https://placehold.co/400x300?text=${encodeURIComponent(food.foodName || "food")}`
           }
           onError={(e) => {
             e.target.src = `https://placehold.co/400x300?text=${encodeURIComponent(food.foodName || "food")}`;

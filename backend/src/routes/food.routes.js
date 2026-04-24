@@ -20,6 +20,6 @@ router.get("/barcode/:barcode", authMiddleware, lookupBarcode);
 router.get("/search", authMiddleware, searchFood);
 
 // 📋 User food history  →  GET /api/food/list
-router.get("/list", getUserFoods);
+router.get("/list", authMiddleware, getUserFoods);
 
 module.exports = router;

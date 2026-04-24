@@ -338,7 +338,8 @@ function detectInputType(req) {
 
 exports.analyzeFoodImage = async (req, res) => {
   try {
-    const { userId, goal = "general" } = req.body;
+    const userId = req.user.id; // ✅ always from verified JWT, never from body
+    const { goal = "general" } = req.body;
     const input = detectInputType(req);
 
     let productData = null;
@@ -510,12 +511,16 @@ exports.lookupBarcode = async (req, res) => {
     return res.status(400).json({ message: "Invalid barcode format" });
   }
 
-  const product = await getProductByBarcode(barcode);
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
+  try {
+    const product = await getProductByBarcode(barcode);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    return res.json(product);
+  } catch (err) {
+    console.error("lookupBarcode error:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
-
-  return res.json(product);
 };
 
 
@@ -523,20 +528,25 @@ exports.searchFood = async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ message: "Query is required" });
 
-  const result =
-    (await searchOpenFoodFacts(query)) ||
-    (await getNutritionFromEdamam(query));
+  try {
+    const result =
+      (await searchOpenFoodFacts(query)) ||
+      (await getNutritionFromEdamam(query));
 
-  if (!result) {
-    return res.status(404).json({ message: `No results for "${query}"` });
+    if (!result) {
+      return res.status(404).json({ message: `No results for "${query}"` });
+    }
+
+    return res.json(result);
+  } catch (err) {
+    console.error("searchFood error:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
-
-  return res.json(result);
 };
 
 exports.getUserFoods = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.user.id; // ✅ from token
 
     const foods = await Food.find({ userId }).sort({ createdAt: -1 });
 

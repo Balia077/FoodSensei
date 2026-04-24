@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/axios";
+import api from "../api/api.js";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 

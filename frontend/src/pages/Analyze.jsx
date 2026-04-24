@@ -8,21 +8,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-
-// ─── API ─────────────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:3000/api";
-
-async function apiPost(path, body, isFormData = false) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    credentials: "include",
-    body: isFormData ? body : JSON.stringify(body),
-    headers: isFormData ? {} : { "Content-Type": "application/json" },
-  });
-  const data = await res.json();
-  if (!res.ok) throw { status: res.status, ...data };
-  return data;
-}
+import { useAuth } from "../context/AuthContext";
+import api from "../api/api.js";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const GOALS = [
@@ -385,7 +372,7 @@ function ResultView({ result, onReset }) {
 }
 
 // ─── TAB: BARCODE ─────────────────────────────────────────────────────────────
-function BarcodeTab({ goal, onResult, loading, setLoading }) {
+function BarcodeTab({ goal, userId, onResult, loading, setLoading }) {
   const [barcode, setBarcode] = useState("");
 
   const submit = async () => {
@@ -394,12 +381,11 @@ function BarcodeTab({ goal, onResult, loading, setLoading }) {
     try {
       const fd = new FormData();
       fd.append("barcode", barcode.trim());
-      fd.append("userId", "123");
       fd.append("goal", goal);
-      const data = await apiPost("/food/analyze-image", fd, true);
-      onResult(data);
+      const res = await api.post("/food/analyze-image", fd);
+      onResult(res.data);
     } catch (err) {
-      alert(err.message || "Barcode lookup failed");
+      alert(err.response?.data?.message || "Barcode lookup failed");
     } finally {
       setLoading(false);
     }
@@ -431,7 +417,7 @@ function BarcodeTab({ goal, onResult, loading, setLoading }) {
 }
 
 // ─── TAB: TEXT ────────────────────────────────────────────────────────────────
-function TextTab({ goal, onResult, loading, setLoading }) {
+function TextTab({ goal, userId, onResult, loading, setLoading }) {
   const [query, setQuery] = useState("");
 
   const submit = async () => {
@@ -440,12 +426,11 @@ function TextTab({ goal, onResult, loading, setLoading }) {
     try {
       const fd = new FormData();
       fd.append("query", query.trim());
-      fd.append("userId", "123");
       fd.append("goal", goal);
-      const data = await apiPost("/food/analyze-image", fd, true);
-      onResult(data);
+      const res = await api.post("/food/analyze-image", fd);
+      onResult(res.data);
     } catch (err) {
-      alert(err.message || "Search failed");
+      alert(err.response?.data?.message || "Search failed");
     } finally {
       setLoading(false);
     }
@@ -475,7 +460,87 @@ function TextTab({ goal, onResult, loading, setLoading }) {
   );
 }
 
-// ─── SHARED STYLES ────────────────────────────────────────────────────────────
+// ─── TAB: IMAGE ───────────────────────────────────────────────────────────────
+function ImageTab({ goal, userId, onResult, loading, setLoading }) {
+  const [preview, setPreview] = useState(null);
+  const [file, setFile] = useState(null);
+  const fileRef = useRef(null);
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const submit = async () => {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      fd.append("goal", goal);
+      const res = await api.post("/food/analyze-image", fd);
+      onResult(res.data);
+    } catch (err) {
+      alert(err.response?.data?.message || "Image analysis failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isDisabled = loading || !file;
+
+  return (
+    <div>
+      <p style={styles.fieldHint}>Upload a photo of your food</p>
+      <div
+        onClick={() => fileRef.current?.click()}
+        style={{
+          border: "1.5px dashed #e5e7eb",
+          borderRadius: 8,
+          padding: "24px 16px",
+          textAlign: "center",
+          cursor: "pointer",
+          background: preview ? "#f9fafb" : "#fff",
+          marginBottom: 12,
+          transition: "border-color 0.15s",
+        }}
+      >
+        {preview ? (
+          <img
+            src={preview}
+            alt="preview"
+            style={{ maxHeight: 160, borderRadius: 6, objectFit: "cover" }}
+          />
+        ) : (
+          <>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
+            <p style={{ margin: 0, fontSize: 12, color: "#9ca3af" }}>
+              Tap to select an image
+            </p>
+          </>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        style={{ display: "none" }}
+      />
+      <button
+        onClick={submit}
+        disabled={isDisabled}
+        style={{ ...styles.submitBtn, opacity: isDisabled ? 0.45 : 1, cursor: isDisabled ? "default" : "pointer" }}
+      >
+        {loading ? "Analyzing…" : "Analyze Image"}
+      </button>
+    </div>
+  );
+}
+
+
 const styles = {
   card: {
     background: "#fff",
@@ -547,6 +612,7 @@ const styles = {
 const TABS = [
   { id: "barcode", label: "Barcode" },
   { id: "text",    label: "Search"  },
+  { id: "image",   label: "Image"   },
 ];
 
 // ─── LOADING SPINNER ──────────────────────────────────────────────────────────
@@ -584,6 +650,7 @@ function LoadingState() {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function Analyze() {
+  const { user } = useAuth();
   const [tab, setTab] = useState("barcode");
   const [goal, setGoal] = useState("general");
   const [result, setResult] = useState(null);
@@ -753,6 +820,7 @@ export default function Analyze() {
                   {tab === "barcode" && (
                     <BarcodeTab
                       goal={goal}
+                      userId={user?.id}
                       onResult={setResult}
                       loading={loading}
                       setLoading={setLoading}
@@ -761,6 +829,16 @@ export default function Analyze() {
                   {tab === "text" && (
                     <TextTab
                       goal={goal}
+                      userId={user?.id}
+                      onResult={setResult}
+                      loading={loading}
+                      setLoading={setLoading}
+                    />
+                  )}
+                  {tab === "image" && (
+                    <ImageTab
+                      goal={goal}
+                      userId={user?.id}
                       onResult={setResult}
                       loading={loading}
                       setLoading={setLoading}

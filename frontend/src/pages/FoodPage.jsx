@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import FoodCard from "../components/FoodCard";
-
-const API_BASE = "http://localhost:3000/api";
+import api from "../api/api.js";
 
 /* ─── Shimmer keyframes injected once ───────────────────────────────────────── */
 const GLOBAL_STYLES = `
@@ -171,15 +170,20 @@ export default function FoodPage() {
   const [error, setError]     = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/food/list?userId=123`)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => setFoods(data))
-      .catch(() => setError("Failed to load foods. Make sure the server is running."))
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchFoods = async () => {
+    try {
+      const res = await api.get("/food/list");
+      setFoods(res.data);
+    } catch (err) {
+      setError("Failed to load foods.");
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchFoods();
+}, []);
 
   const healthyFoods   = foods.filter(f => f.status === "HEALTHY");
   const moderateFoods  = foods.filter(f => f.status === "MODERATE");
