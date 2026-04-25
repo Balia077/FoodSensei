@@ -43,7 +43,7 @@ const Login = () => {
         <div className="hidden lg:block w-1/2 p-3">
           <img
             className="w-full h-full object-cover rounded-2xl"
-            src="../images/second.png"
+            src="../images/sixth.jpg"
             alt=""
           />
         </div>

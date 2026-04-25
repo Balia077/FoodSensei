@@ -49,7 +49,7 @@ const Register = () => {
         <div className="hidden lg:block w-1/2 h-full p-3">
           <img
             className="w-full h-full object-cover rounded-2xl"
-            src="../images/third.jpg"
+            src="../images/fifth.jpg"
             alt=""
           />
         </div>
