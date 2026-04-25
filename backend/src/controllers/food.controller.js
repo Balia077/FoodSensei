@@ -186,7 +186,7 @@ async function getNutritionFromUSDA(query) {
         pageSize: 10,
         api_key: process.env.USDA_API_KEY || "DEMO_KEY",
         // Prefer Foundation & SR Legacy: most accurate per-100g data
-        dataType: "Foundation,SR Legacy,Survey (FNDDS),Branded",
+        dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"],
       },
       timeout: 10000,
     });
