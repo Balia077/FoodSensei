@@ -694,13 +694,8 @@ const GLOBAL_STYLES = `
 
 /* ─── Constants ────────────────────────────────────────────────────────────── */
 const CURRENCIES = [
-  { code: "INR", symbol: "₹", name: "Indian Rupee" },
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
-  { code: "AED", symbol: "د.إ", name: "UAE Dirham" },
-  { code: "BRL", symbol: "R$", name: "Brazilian Real" },
+  { code: "INR", symbol: "₹", name: "Indian Rupee", min: 50,  placeholder: "e.g. 200" },
+  { code: "USD", symbol: "$", name: "US Dollar",    min: 5,   placeholder: "e.g. 20"  },
 ];
 
 const DIET_OPTIONS = [
@@ -715,6 +710,13 @@ const MEAL_THEMES = {
   Dinner:    { accent: "#ff5f7e", bg: "rgba(255,95,126,0.1)", color: "#ff5f7e", gradient: "linear-gradient(90deg,#ff5f7e,#e91e63)" },
 };
 const MEAL_ICONS = { Breakfast: "🌅", Lunch: "☀️", Snack: "🍎", Dinner: "🌙" };
+
+/* ─── Strip any currency symbol Gemini may have embedded in numeric values ── */
+function stripSymbol(val, symbol) {
+  if (val === undefined || val === null) return 0;
+  const str = String(val).replace(symbol, "").replace("₹","").replace("$","").replace("€","").replace("£","").replace("¥","").trim();
+  return parseFloat(str) || 0;
+}
 
 /* ─── Skeleton card ─────────────────────────────────────────────────────────── */
 function SkeletonCard() {
@@ -757,12 +759,12 @@ function MealCard({ meal, currencySymbol, index }) {
       {/* Nutrition */}
       <div className="mp-nutr-grid">
         {[
-          { label: "Calories", value: `${meal.nutrition.calories}` , unit: "kcal" },
-          { label: "Protein",  value: `${meal.nutrition.protein}g`,  unit: ""     },
-          { label: "Carbs",    value: `${meal.nutrition.carbs}g`,    unit: ""     },
-          { label: "Fat",      value: `${meal.nutrition.fat}g`,      unit: ""     },
-          { label: "Fiber",    value: `${meal.nutrition.fiber}g`,    unit: ""     },
-          { label: "Sodium",   value: `${meal.nutrition.sodium}`,    unit: "mg"   },
+          { label: "Calories", value: `${stripSymbol(meal.nutrition.calories,"")}` , unit: "kcal" },
+          { label: "Protein",  value: `${stripSymbol(meal.nutrition.protein,"")}g`,  unit: ""     },
+          { label: "Carbs",    value: `${stripSymbol(meal.nutrition.carbs,"")}g`,    unit: ""     },
+          { label: "Fat",      value: `${stripSymbol(meal.nutrition.fat,"")}g`,      unit: ""     },
+          { label: "Fiber",    value: `${stripSymbol(meal.nutrition.fiber,"")}g`,    unit: ""     },
+          { label: "Sodium",   value: `${stripSymbol(meal.nutrition.sodium,"")}`,    unit: "mg"   },
         ].map(n => (
           <div key={n.label} className="mp-nutr-cell">
             <span className="mp-nutr-val">{n.value}<span style={{ fontSize: 9, fontWeight: 500, color: "var(--text-3)" }}>{n.unit}</span></span>
@@ -781,7 +783,7 @@ function MealCard({ meal, currencySymbol, index }) {
       {/* Footer */}
       <div className="mp-card-footer">
         <div className="mp-cost-wrap">
-          <div className="mp-cost">{currencySymbol}{meal.estimatedCost}</div>
+          <div className="mp-cost">{currencySymbol}{stripSymbol(meal.estimatedCost, currencySymbol)}</div>
           <div className="mp-cost-lbl">estimated cost</div>
         </div>
         <div className="mp-ings">
@@ -811,7 +813,17 @@ export default function MealPlanner() {
   const [saved,    setSaved]    = useState(false);
   const resultsRef = useRef(null);
 
-  const currSymbol = CURRENCIES.find(c => c.code === currency)?.symbol || "₹";
+  const currObj      = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
+  const currSymbol   = currObj.symbol;
+  const currMin      = currObj.min;
+  const currPlaceholder = currObj.placeholder;
+
+  function handleCurrencyChange(code) {
+    setCurrency(code);
+    setBudget(""); // reset budget so user re-enters for new currency
+    setError("");
+    setMeals([]); setSummary(null); setSaved(false);
+  }
 
   function toggleDiet(d) {
     setDiets(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -820,6 +832,10 @@ export default function MealPlanner() {
   async function generateMeals() {
     const num = parseFloat(budget);
     if (!num || num <= 0) { setError("Please enter a valid daily budget."); return; }
+    if (num < currMin) {
+      setError(`Minimum budget for ${currency} is ${currSymbol}${currMin}. Please enter a realistic daily food budget.`);
+      return;
+    }
     setError(""); setLoading(true); setMeals([]); setSummary(null); setSaved(false);
     try {
       const res = await api.post("/meal/generate", {
@@ -870,7 +886,7 @@ export default function MealPlanner() {
         <div className="mp-hero">
           <div className="mp-hero-badge">
             <span className="dot" />
-            AI-Powered Nutrition
+            Food Sensei
           </div>
           <h1 className="mp-hero-title">
             Your Perfect<br /><span>Meal Plan</span>
@@ -893,7 +909,7 @@ export default function MealPlanner() {
             <select
               className="mp-currency-select"
               value={currency}
-              onChange={e => setCurrency(e.target.value)}
+              onChange={e => handleCurrencyChange(e.target.value)}
             >
               {CURRENCIES.map(c => (
                 <option key={c.code} value={c.code} style={{ background: "#0d1117" }}>
@@ -904,12 +920,16 @@ export default function MealPlanner() {
             <input
               type="number"
               className="mp-budget-input"
-              placeholder="e.g. 200"
+              placeholder={currPlaceholder}
               value={budget}
               onChange={e => setBudget(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !loading && generateMeals()}
-              min="1"
+              min={currMin}
             />
+          </div>
+
+          <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 8, fontWeight: 500 }}>
+            Minimum: {currSymbol}{currMin} · Enter a realistic daily food budget
           </div>
 
           <div className="mp-divider" />
@@ -954,7 +974,7 @@ export default function MealPlanner() {
             <div className="mp-summary">
               <div className="mp-summary-top">
                 {[
-                  { val: `${currSymbol}${summary.totalCost}`, lbl: "Total Cost" },
+                  { val: `${currSymbol}${stripSymbol(summary.totalCost, currSymbol)}`, lbl: "Total Cost" },
                   { val: `${summary.totalCalories} kcal`,     lbl: "Calories"   },
                   { val: `${summary.totalProtein}g`,           lbl: "Protein"    },
                   { val: `${summary.totalFiber}g`,             lbl: "Fiber", hide: true },

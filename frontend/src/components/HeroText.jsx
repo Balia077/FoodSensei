@@ -52,7 +52,7 @@ const HeroText = () => {
           guidance tailored just for you.
         </p>
 
-        <Link to={'/analyze'}>
+        <Link to={'/mealplanner'}>
           <button className="mt-6 sm:mt-8 px-6 py-3 sm:px-7 sm:py-3.5 text-sm sm:text-base cursor-pointer bg-black text-white rounded-full shadow-lg hover:scale-105 transition-all duration-300">
             Try it Now →
           </button>

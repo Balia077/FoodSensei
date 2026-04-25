@@ -89,7 +89,7 @@ const Features = () => {
       <Link to={'/analyze'}>
         <div className="fixed bottom-4 left-0 right-0 flex justify-center sm:hidden">
           <button className="bg-lime-400 text-black font-semibold px-6 py-3 rounded-full shadow-lg">
-            Start Tracking
+            Analyze Now
           </button>
         </div>
       </Link>

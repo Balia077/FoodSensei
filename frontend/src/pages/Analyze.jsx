@@ -313,7 +313,7 @@ function TextTab({ goal, onResult, loading, setLoading }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
-        placeholder="e.g. Maggi noodles, apple, chicken breast, dal"
+        placeholder="e.g. Maggi noodles, dal"
         style={styles.input}
       />
       {error && <p style={styles.errorText}>{error}</p>}
