@@ -1,14 +1,11 @@
 const Food = require("../models/food.model");
 const axios = require("axios");
-const FormData = require("form-data");
 const normalizeFoodWikipedia = require("../utils/foodNormalizer");
 
-
-const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-
-
+const clamp  = (val, min, max) => Math.max(min, Math.min(max, val));
 const round2 = (n) => Math.round((n || 0) * 100) / 100;
 
+// ─── SCORING ──────────────────────────────────────────────────────────────────
 
 function scoreNutrient(value, { bad, worse, worst }, invert = false) {
   if (invert) {
@@ -24,19 +21,12 @@ function scoreNutrient(value, { bad, worse, worst }, invert = false) {
   }
 }
 
-
 function calculateScore(nutrition, goal = "general") {
   const {
-    calories = 0,
-    sugar    = 0,
-    fat      = 0,
-    sodium   = 0,    // mg
-    protein  = 0,
-    fiber    = 0,
-    carbs    = 0,
+    calories = 0, sugar = 0, fat = 0,
+    sodium = 0, protein = 0, fiber = 0, carbs = 0,
   } = nutrition;
 
-  // ── 1. PER-NUTRIENT SCORES (0–100) ───────────────────────
   const calorieScore = scoreNutrient(calories, { bad: 200, worse: 350, worst: 500 }, true);
   const sugarScore   = scoreNutrient(sugar,    { bad: 6,   worse: 12,  worst: 22  }, true);
   const fatScore     = scoreNutrient(fat,      { bad: 12,  worse: 20,  worst: 30  }, true);
@@ -44,74 +34,55 @@ function calculateScore(nutrition, goal = "general") {
   const proteinScore = scoreNutrient(protein,  { bad: 3,   worse: 8,   worst: 15  }, false);
   const fiberScore   = scoreNutrient(fiber,    { bad: 1.5, worse: 3,   worst: 6   }, false);
 
-  
-  const weights = {
-    calories: 0.18,
-    sugar:    0.22,   // sugar is the biggest offender in processed food
-    fat:      0.18,
-    sodium:   0.18,   // critical for packaged/Indian snacks
-    protein:  0.14,
-    fiber:    0.10,
-  };
-
   let base =
-    calorieScore * weights.calories +
-    sugarScore   * weights.sugar    +
-    fatScore     * weights.fat      +
-    sodiumScore  * weights.sodium   +
-    proteinScore * weights.protein  +
-    fiberScore   * weights.fiber;
+    calorieScore * 0.18 +
+    sugarScore   * 0.22 +
+    fatScore     * 0.18 +
+    sodiumScore  * 0.18 +
+    proteinScore * 0.14 +
+    fiberScore   * 0.10;
 
-  
   const badCount = [
-    sugar    > 12,
-    fat      > 20,
-    sodium   > 500,
-    calories > 350,
+    sugar > 12, fat > 20, sodium > 500, calories > 350,
   ].filter(Boolean).length;
 
-  if (badCount >= 3) base *= 0.65;        // truly junk — hard 35% cut
-  else if (badCount === 2) base *= 0.80;  // problematic — 20% cut
+  if (badCount >= 3)      base *= 0.65;
+  else if (badCount === 2) base *= 0.80;
 
-  
-  if (sugar    > 30)  base = Math.min(base, 30);  // candy / soda territory
-  if (fat      > 35)  base = Math.min(base, 35);  // deep-fried / butter
-  if (sodium   > 900) base = Math.min(base, 35);  // extremely salty
+  if (sugar    > 30)  base = Math.min(base, 30);
+  if (fat      > 35)  base = Math.min(base, 35);
+  if (sodium   > 900) base = Math.min(base, 35);
   if (calories > 550) base = Math.min(base, 40);
 
- 
   let modifier = 0;
 
   if (goal === "weight_loss") {
-    if (calories > 300)  modifier -= 8;
+    if (calories > 300)      modifier -= 8;
     else if (calories < 150) modifier += 5;
-    if (fat > 15)        modifier -= 5;
-    if (fiber > 4)       modifier += 5;
-    if (sugar > 10)      modifier -= 5;
+    if (fat > 15)   modifier -= 5;
+    if (fiber > 4)  modifier += 5;
+    if (sugar > 10) modifier -= 5;
   }
 
   if (goal === "muscle_gain") {
-    if (protein > 20)    modifier += 10;
-    else if (protein > 12) modifier += 6;
-    else if (protein < 5)  modifier -= 8; // low-protein is bad for this goal
-    if (carbs > 40 && protein > 10) modifier += 4; // acceptable carb+protein combo
+    if (protein > 20)               modifier += 10;
+    else if (protein > 12)          modifier += 6;
+    else if (protein < 5)           modifier -= 8;
+    if (carbs > 40 && protein > 10) modifier += 4;
   }
 
   if (goal === "general") {
-    // Small bonus for genuinely clean profiles only
     if (fiber > 5 && sugar < 6 && sodium < 250) modifier += 5;
   }
 
   return clamp(Math.round(base + modifier), 0, 100);
 }
 
-
 function classify(score) {
   if (score >= 70) return "HEALTHY";
   if (score >= 45) return "MODERATE";
   return "UNHEALTHY";
 }
-
 
 function generateReason(nutrition, nutriScore, goal = "general") {
   const {
@@ -153,20 +124,21 @@ function generateReason(nutrition, nutriScore, goal = "general") {
 
   if (nutriScore && nutriScore !== "unknown") {
     const grade = nutriScore.toUpperCase();
-    if (["A", "B"].includes(grade))   positives.push(`Nutri-Score ${grade} (official rating)`);
+    if (["A", "B"].includes(grade))      positives.push(`Nutri-Score ${grade} (official rating)`);
     else if (["D", "E"].includes(grade)) negatives.push(`Nutri-Score ${grade} (officially rated poor)`);
-    else negatives.push(`Nutri-Score ${grade}`);
+    else                                 negatives.push(`Nutri-Score ${grade}`);
   }
 
   const parts = [];
   if (negatives.length) parts.push(`Issues: ${negatives.join(", ")}.`);
   if (positives.length) parts.push(`Positives: ${positives.join(", ")}.`);
   if (!parts.length)    parts.push("Nutrition profile looks balanced.");
-
   return parts.join(" ");
 }
 
+// ─── DATA SOURCES ─────────────────────────────────────────────────────────────
 
+// 1. Open Food Facts — barcode lookup (no key needed)
 async function getProductByBarcode(barcode) {
   try {
     const res = await axios.get(
@@ -192,7 +164,7 @@ async function getProductByBarcode(barcode) {
         fat:      round2(n.fat_100g || 0),
         sugar:    round2(n.sugars_100g || 0),
         fiber:    round2(n.fiber_100g || 0),
-        sodium:   round2((n.sodium_100g || n.sodium || 0) * 1000), // g → mg
+        sodium:   round2((n.sodium_100g || n.sodium || 0) * 1000),
         carbs:    round2(n.carbohydrates_100g || 0),
       },
     };
@@ -202,24 +174,98 @@ async function getProductByBarcode(barcode) {
   }
 }
 
-
-async function searchOpenFoodFacts(query) {
+// 2. USDA FoodData Central — text search (free API key, no business account)
+//    Sign up at: https://fdc.nal.usda.gov/api-guide.html  (instant, free)
+//    Supports: Foundation, SR Legacy, Survey (FNDDS), Branded foods
+//    Strategy: prefer Foundation/SR Legacy (per-100g, reliable) over Branded
+async function getNutritionFromUSDA(query) {
   try {
-    const res = await axios.get(
-      "https://world.openfoodfacts.org/cgi/search.pl",
-      {
-        params: {
-          search_terms: query,
-          search_simple: 1,
-          action: "process",
-          json: 1,
-          page_size: 5,
-        },
-        timeout: 8000,
+    const res = await axios.get("https://api.nal.usda.gov/fdc/v1/foods/search", {
+      params: {
+        query,
+        pageSize: 10,
+        api_key: process.env.USDA_API_KEY || "DEMO_KEY",
+        // Prefer Foundation & SR Legacy: most accurate per-100g data
+        dataType: "Foundation,SR Legacy,Survey (FNDDS),Branded",
       },
+      timeout: 10000,
+    });
+
+    const foods = res.data?.foods;
+    if (!foods || foods.length === 0) return null;
+
+    // Pick the best result: Foundation > SR Legacy > Survey > Branded
+    const priority = { "Foundation": 0, "SR Legacy": 1, "Survey (FNDDS)": 2, "Branded": 3 };
+    const sorted = [...foods].sort(
+      (a, b) => (priority[a.dataType] ?? 4) - (priority[b.dataType] ?? 4),
     );
 
-    const product = res.data?.products?.find((p) => p?.product_name);
+    const food = sorted.find((f) => f.foodNutrients?.length >= 3) || sorted[0];
+    if (!food) return null;
+
+    const nutrients = food.foodNutrients || [];
+
+    // USDA nutrient IDs are stable — use them for precision
+    const byId = (id) => {
+      const n = nutrients.find((n) => n.nutrientId === id || n.nutrientNumber === String(id));
+      return round2(n?.value || 0);
+    };
+
+    // Fallback: match by name fragment if ID not found
+    const byName = (fragment) => {
+      const n = nutrients.find((n) =>
+        n.nutrientName?.toLowerCase().includes(fragment.toLowerCase()),
+      );
+      return round2(n?.value || 0);
+    };
+
+    // USDA nutrient IDs: 1008=Energy(kcal), 1003=Protein, 1004=Fat,
+    //   1005=Carbs, 2000=Sugars, 1079=Fiber, 1093=Sodium
+    const calories = byId(1008) || byName("energy");
+    const protein  = byId(1003) || byName("protein");
+    const fat      = byId(1004) || byName("total lipid");
+    const carbs    = byId(1005) || byName("carbohydrate");
+    const sugar    = byId(2000) || byName("sugars");
+    const fiber    = byId(1079) || byName("fiber");
+    const sodium   = byId(1093) || byName("sodium");
+
+    // Reject results that have zero for everything (junk entry)
+    if (!calories && !protein && !fat && !carbs) return null;
+
+    return {
+      source: "usda",
+      foodName: toTitleCase(food.description || query),
+      brand: food.brandOwner || food.brandName || null,
+      imageUrl: null,
+      nutriScore: null,
+      ingredients: food.ingredients || null,
+      nutrition: { calories, protein, fat, sugar, fiber, sodium, carbs },
+    };
+  } catch (err) {
+    console.error("USDA error:", err.message);
+    return null;
+  }
+}
+
+// 3. Open Food Facts — text search fallback (no key needed)
+async function searchOpenFoodFacts(query) {
+  try {
+    const res = await axios.get("https://world.openfoodfacts.org/cgi/search.pl", {
+      params: {
+        search_terms: query,
+        search_simple: 1,
+        action: "process",
+        json: 1,
+        page_size: 5,
+      },
+      timeout: 8000,
+    });
+
+    const product = res.data?.products?.find((p) => {
+      const n = p?.nutriments || {};
+      // Only accept if it has at least calories or protein data
+      return p?.product_name && (n["energy-kcal_100g"] || n.proteins_100g);
+    });
 
     if (!product) return null;
 
@@ -248,221 +294,77 @@ async function searchOpenFoodFacts(query) {
   }
 }
 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-async function getNutritionFromEdamam(foodName) {
-  try {
-    const res = await axios.get("https://api.edamam.com/api/nutrition-data", {
-      params: {
-        app_id:  process.env.EDAMAM_APP_ID,
-        app_key: process.env.EDAMAM_APP_KEY,
-        ingr:    `100g ${foodName}`,
-      },
-      timeout: 8000,
-    });
-
-    const data = res.data;
-    if (!data || data.calories === 0) return null;
-
-    const n = data.totalNutrients || {};
-
-    return {
-      source: "edamam",
-      foodName,
-      brand: null,
-      imageUrl: null,
-      nutriScore: null,
-      ingredients: null,
-      nutrition: {
-        calories: round2(data.calories || 0),
-        protein:  round2(n.PROCNT?.quantity || 0),
-        fat:      round2(n.FAT?.quantity || 0),
-        sugar:    round2(n.SUGAR?.quantity || 0),
-        fiber:    round2(n.FIBTG?.quantity || 0),
-        sodium:   round2(n.NA?.quantity || 0),
-        carbs:    round2(n.CHOCDF?.quantity || 0),
-      },
-    };
-  } catch (err) {
-    console.error("Edamam error:", err.response?.data || err.message);
-    return null;
-  }
+function toTitleCase(str) {
+  return str
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-
-async function recognizeFoodFromImage(imageBuffer) {
-  const formData = new FormData();
-  formData.append("image", imageBuffer, {
-    filename: "food.jpg",
-    contentType: "image/jpeg",
-  });
-
-  const res = await axios.post(
-    "https://api.logmeal.es/v2/image/recognition/complete",
-    formData,
-    {
-      headers: {
-        ...formData.getHeaders(),
-        Authorization: `Bearer ${process.env.LOGMEAL_TOKEN}`,
-      },
-      timeout: 15000,
-    },
-  );
-
-  const results = res.data?.recognition_results || [];
-  const top = results[0];
-
-  return {
-    name: top?.name || null,
-    confidence: top?.prob || 0,
-    allResults: results.slice(0, 3).map((r) => ({
-      name: r.name,
-      confidence: round2(r.prob * 100),
-    })),
-  };
-}
-
-
-function detectInputType(req) {
-  const barcode   = req.body.barcode?.trim();
-  const textQuery = req.body.query?.trim();
-  const hasImage  = !!req.file;
-
-  if (barcode && /^\d{8,14}$/.test(barcode))
-    return { type: "barcode", value: barcode };
-  if (hasImage) return { type: "image", value: req.file.buffer };
-  if (textQuery) return { type: "text", value: textQuery };
-
-  return { type: "unknown" };
-}
-
+// ─── CONTROLLERS ──────────────────────────────────────────────────────────────
 
 exports.analyzeFoodImage = async (req, res) => {
   try {
-    const userId = req.user.id; // ✅ always from verified JWT, never from body
+    const userId        = req.user.id; // ✅ always from verified JWT
     const { goal = "general" } = req.body;
-    const input = detectInputType(req);
+    const barcode       = req.body.barcode?.trim();
+    const textQuery     = req.body.query?.trim();
 
     let productData = null;
-    let logmealMeta = null;
-    let warning     = null;
 
-
-    if (input.type === "barcode") {
-      console.log("📦 Barcode scan:", input.value);
-      productData = await getProductByBarcode(input.value);
+    // ── Barcode ───────────────────────────────────────────────
+    if (barcode) {
+      if (!/^\d{8,14}$/.test(barcode)) {
+        return res.status(400).json({ message: "Invalid barcode (must be 8–14 digits)." });
+      }
+      console.log("📦 Barcode:", barcode);
+      productData = await getProductByBarcode(barcode);
 
       if (!productData) {
         return res.status(404).json({
-          message: "Product not found for this barcode, Check Your Internet Connection or Try searching by name.",
+          message: "Product not found for this barcode. Try searching by name instead.",
         });
       }
 
-    } else if (input.type === "image") {
-      
-      console.log("🖼️  Image analysis starting...");
+    // ── Text search ───────────────────────────────────────────
+    } else if (textQuery) {
+      console.log("🔤 Text search:", textQuery);
 
-      try {
-        logmealMeta = await recognizeFoodFromImage(input.value);
-      } catch (logmealErr) {
-        console.error("LogMeal failed:", logmealErr.message);
-        warning = "Image recognition service unavailable. Please try a text search.";
-        return res.status(503).json({ message: warning });
-      }
+      const query = await normalizeFoodWikipedia(textQuery);
+      console.log("🧠 Normalized:", query);
 
-      let { name: logmealName, confidence } = logmealMeta;
-
-      if (logmealName) {
-        logmealName = await normalizeFoodWikipedia(logmealName);
-      }
-      console.log(`LogMeal → "${logmealName}" (${round2(confidence * 100)}%)`);
-
-      if (!logmealName || confidence < 0.3) {
-        warning = "Low confidence image recognition. Falling back to food database search.";
-        if (logmealName) {
-          productData =
-            (await searchOpenFoodFacts(logmealName)) ||
-            (await getNutritionFromEdamam(logmealName));
-        }
-        if (!productData) {
-          return res.status(422).json({
-            message: "Could not identify this food. Try uploading a clearer image or use text/barcode search.",
-            logmealResults: logmealMeta?.allResults || [],
-          });
-        }
-      } else {
-        productData =
-          (await getNutritionFromEdamam(logmealName)) ||
-          (await searchOpenFoodFacts(logmealName));
-
-        if (!productData) {
-          warning = `Nutrition data not found for "${logmealName}".`;
-          return res.status(404).json({
-            message: warning,
-            logmealResults: logmealMeta?.allResults || [],
-          });
-        }
-
-        if (confidence < 0.6) {
-          warning = `Detection confidence is ${round2(confidence * 100)}% — results may not be fully accurate.`;
-        }
-
-        productData.foodName = logmealName;
-      }
-
-    } else if (input.type === "text") {
-      
-      console.log("🔤 Text search:", input.value);
-
-      let query = await normalizeFoodWikipedia(input.value);
-      console.log("🧠 Normalized query:", query);
-
-      productData = await searchOpenFoodFacts(query);
-      if (!productData) productData = await getNutritionFromEdamam(query);
+      // Fallback chain: USDA (best accuracy) → Open Food Facts
+      productData =
+        (await getNutritionFromUSDA(query)) ||
+        (await searchOpenFoodFacts(query));
 
       if (!productData) {
         return res.status(404).json({
-          message: `No nutrition data found for "${input.value}". Try a different name.`,
+          message: `No nutrition data found for "${textQuery}". Try a more specific name.`,
         });
       }
 
     } else {
       return res.status(400).json({
-        message: "Please provide an image, barcode, or food name to analyze.",
+        message: "Please provide a barcode or food name.",
       });
     }
 
-    
-    const {
-      nutrition,
-      foodName,
-      brand,
-      imageUrl,
-      nutriScore,
-      ingredients,
-      source,
-    } = productData;
-
-    const fallbackImage = `https://source.unsplash.com/300x200/?${encodeURIComponent(foodName)}`;
-
-    const finalImageUrl =
-      imageUrl ||
-      productData.image_front_url ||
-      productData.image_small_url ||
-      fallbackImage;
+    // ── Score & save ──────────────────────────────────────────
+    const { nutrition, foodName, brand, imageUrl, nutriScore, ingredients, source } = productData;
 
     const score  = calculateScore(nutrition, goal);
     const status = classify(score);
     const reason = generateReason(nutrition, nutriScore, goal);
 
-    console.log(`[Score] ${foodName} → ${score} (${status}) | goal: ${goal}`);
-    console.log("[Nutrition]", nutrition);
+    console.log(`[Score] ${foodName} → ${score} (${status}) | goal: ${goal} | source: ${source}`);
 
-    
     const food = await Food.create({
       userId,
       foodName,
       brand,
-      imageUrl: finalImageUrl,
+      imageUrl: imageUrl || null,
       ...nutrition,
       score,
       status,
@@ -470,52 +372,28 @@ exports.analyzeFoodImage = async (req, res) => {
       source,
     });
 
-    
     return res.json({
-      foodName,
-      brand,
-      score,
-      status,
-      reason,
-      warning,
-      nutrition,
-      nutriScore,
-      ingredients,
-      imageUrl,
+      foodName, brand, score, status, reason,
+      nutrition, nutriScore, ingredients,
+      imageUrl: imageUrl || null,
       source,
-
-      
-      ...(logmealMeta && {
-        detectionConfidence:   round2(logmealMeta.confidence * 100),
-        alternativeDetections: logmealMeta.allResults,
-      }),
-
-
       recordId: food._id,
     });
 
   } catch (err) {
     console.error("analyzeFoodImage error:", err.response?.data || err.message);
-    return res.status(500).json({
-      message: "Internal server error",
-      error: err.response?.data || err.message,
-    });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
 exports.lookupBarcode = async (req, res) => {
   const { barcode } = req.params;
-
   if (!barcode || !/^\d{8,14}$/.test(barcode)) {
     return res.status(400).json({ message: "Invalid barcode format" });
   }
-
   try {
     const product = await getProductByBarcode(barcode);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
     return res.json(product);
   } catch (err) {
     console.error("lookupBarcode error:", err.message);
@@ -523,20 +401,15 @@ exports.lookupBarcode = async (req, res) => {
   }
 };
 
-
 exports.searchFood = async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ message: "Query is required" });
-
   try {
     const result =
-      (await searchOpenFoodFacts(query)) ||
-      (await getNutritionFromEdamam(query));
+      (await getNutritionFromUSDA(query)) ||
+      (await searchOpenFoodFacts(query));
 
-    if (!result) {
-      return res.status(404).json({ message: `No results for "${query}"` });
-    }
-
+    if (!result) return res.status(404).json({ message: `No results for "${query}"` });
     return res.json(result);
   } catch (err) {
     console.error("searchFood error:", err.message);
@@ -546,10 +419,7 @@ exports.searchFood = async (req, res) => {
 
 exports.getUserFoods = async (req, res) => {
   try {
-    const userId = req.user.id; // ✅ from token
-
-    const foods = await Food.find({ userId }).sort({ createdAt: -1 });
-
+    const foods = await Food.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(foods);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch foods" });
