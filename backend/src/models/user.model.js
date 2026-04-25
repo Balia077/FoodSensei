@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -10,13 +9,23 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unoque: true,
+        unique: true,
     },
     password: {
         type: String,
         required: true,
-    }
-})
+    },
+    savedMeals: [
+        {
+            savedAt:        { type: Date,   default: Date.now },
+            currency:       { type: String  },
+            currencySymbol: { type: String  },
+            budget:         { type: Number  },
+            summary:        { type: Object  },
+            meals:          { type: Array   },
+        }
+    ]
+});
 
 const userModel = mongoose.model('User', userSchema);
 
