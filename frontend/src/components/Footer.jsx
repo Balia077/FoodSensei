@@ -8,7 +8,7 @@ const Footer = () => {
       links: [
         { label: "Barcode Scanner", to: "/analyze" },
         { label: "Food Search", to: "/analyze" },
-        { label: "Meal Tracking", to: "/analyze" },
+        { label: "Meal Tracking", to: "/mealplanner" },
         { label: "Health Insights", to: "/analyze" },
       ],
     },
